@@ -27,7 +27,7 @@ def predict(prompt: str, payment_header: str = None):
 ## 🎁 Why developers love this
 When an AI agent calls your monetized endpoint without a payment header, `aimpn` automatically returns an HTTP **`402 Payment Required`** exception with full instructions on how to send the $0.01 USDC micropayment using our **Zero-Gas ERC-4337 Paymaster (`0x7Df0AA...`)**.
 
-**Bonus:** Builders who call your endpoint 100 times automatically receive a **$10.00 USDC Builder Bounty** from our on-chain indexer!
+**Note:** This SDK does not include an active builder-bounty program. Any reward terms, eligibility requirements, acceptance criteria, and payment timelines must be confirmed separately by the project maintainers before undertaking work or funding transactions.
 
 ---
 *Visit https://github.com/tdpeta754-design/ai-micropayment-network for full documentation and interactive playgrounds.*
