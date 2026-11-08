@@ -121,3 +121,27 @@ def test_invalid_identifier_does_not_query(client, app, monkeypatch):
 def test_nonexistent_result(client):
     assert client.get('/v1/results/abc').status_code==404
     assert client.get('/v1/results/00000000-0000-0000-0000-000000000000').status_code==404
+
+
+def test_discovery_endpoints(client):
+    assert 'https://404.eostorm.com/mcp/' in client.get('/llms.txt').text
+    assert 'Sitemap:' in client.get('/robots.txt').text
+    assert '<urlset' in client.get('/sitemap.xml').text
+    data = client.get('/.well-known/agent.json').json()
+    assert data['payments_enabled'] is False
+    assert data['registry_status'] == 'not_registered'
+
+
+def test_global_nvd_short_window_limit(tmp_path, monkeypatch):
+    app = create_app(db_path=str(tmp_path/'global-short.sqlite3'), secret='secret')
+    app.state.resolver.daily_limit = 100
+    app.state.resolver.per_minute_limit = 100
+    async def fake_fetch(identifier):
+        return {'vulnerabilities': []}
+    monkeypatch.setattr(app.state.resolver, 'fetch_nvd', fake_fetch)
+    with TestClient(app) as client:
+        first = client.post('/v1/resolve', json={'identifier': 'CVE-2026-77777701'})
+        second = client.post('/v1/resolve', json={'identifier': 'CVE-2026-77777702'})
+        assert first.status_code == 200
+        assert second.status_code == 429
+        assert 'short-window' in second.text

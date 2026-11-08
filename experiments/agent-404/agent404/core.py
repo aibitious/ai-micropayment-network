@@ -84,6 +84,12 @@ class Resolver:
             self.store.event(identity, 'resolve', existing['status'], True)
             return {**existing, 'reused': True}
         day = time.strftime('%Y%m%d', time.gmtime())
+        # NVD's no-key traffic must be kept well below its short-window rate cap.
+        # Only one uncached upstream request per 10-second slot, shared by ALL clients.
+        slot = int(time.time() // 10)
+        if not self.store.consume_limit(f'upstream10:{slot}', 'global', 1):
+            self.store.event(identity, 'resolve', 'short_window_limited')
+            raise Limited('global upstream short-window limit reached')
         if not self.store.consume_limit(f'upstream:{day}', 'global', self.upstream_daily_limit):
             self.store.event(identity, 'resolve', 'budget_exceeded')
             raise Limited('global upstream budget reached')

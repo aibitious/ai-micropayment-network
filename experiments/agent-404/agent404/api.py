@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, Request, HTTPException, Header
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 from .core import Resolver, Store, Limited, UpstreamFailed
 
@@ -61,6 +61,39 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         <pre>POST /v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
         <p><a href="/docs">OpenAPI docs</a> · <a href="/v1/catalog">Agent catalog</a> · <a href="/health">Health</a></p>
         <p>Free experimental access. No payments enabled. Do not submit secrets or personal information.</p></html>'''
+
+    @app.get('/robots.txt', response_class=PlainTextResponse, include_in_schema=False)
+    async def robots():
+        return ('User-agent: *\nAllow: /\nDisallow: /v1/metrics\n'
+                'Sitemap: https://404.eostorm.com/sitemap.xml\n')
+
+    @app.get('/llms.txt', response_class=PlainTextResponse, include_in_schema=False)
+    async def llms():
+        return ("# AIBITIOUS 404 – verifiable CVE records\n\n"
+                "Free public experiment; verifies exact CVE identifiers against NIST NVD. "
+                "Does not scan hosts, execute code, or accept payments.\n\n"
+                "- REST docs: https://404.eostorm.com/docs\n"
+                "- OpenAPI: https://404.eostorm.com/openapi.json\n"
+                "- Agent catalog: https://404.eostorm.com/v1/catalog\n"
+                "- Streamable HTTP MCP: https://404.eostorm.com/mcp/\n"
+                "- Limitations: only one CVE per lookup; official NVD evidence, not independent validation.\n")
+
+    @app.get('/sitemap.xml', include_in_schema=False)
+    async def sitemap():
+        xml = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+               "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+               "<url><loc>https://404.eostorm.com/</loc></url>"
+               "<url><loc>https://404.eostorm.com/docs</loc></url>"
+               "</urlset>")
+        return Response(content=xml, media_type='application/xml')
+
+    @app.get('/.well-known/agent.json', include_in_schema=False)
+    async def agent_metadata():
+        # Descriptive public metadata, NOT a claim of official MCP Registry enrollment.
+        return {'name': 'AIBITIOUS 404', 'description': 'Free NVD CVE evidence verification',
+                'mcp': 'https://404.eostorm.com/mcp/',
+                'openapi': 'https://404.eostorm.com/openapi.json',
+                'registry_status': 'not_registered', 'payments_enabled': False}
 
     @app.get('/health')
     async def health():

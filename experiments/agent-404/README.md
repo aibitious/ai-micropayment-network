@@ -1,6 +1,6 @@
 # AIBITIOUS 404 — agent-first missing-information experiment
 
-**Status: tested prototype; NOT publicly deployed; no payments enabled.**
+**Status: LIVE free API experiment at https://404.eostorm.com/; no payments enabled. MCP Registry listing is pending authentication.**
 
 Goal: test whether independently operated AI agents discover and reuse a small, evidence-backed information API. The *first vertical* is deliberately narrow: resolving exact CVE IDs against the official NIST National Vulnerability Database (NVD). The project's long-term idea is to detect recurring missing-information needs, but this repository does **not** claim to verify arbitrary facts.
 
@@ -9,10 +9,10 @@ Goal: test whether independently operated AI agents discover and reuse a small, 
 - `POST /v1/resolve` — identifier or question containing **one** `CVE-YYYY-NNNN...`, return official metadata with source URL and observation time; `unsupported` or `not_verified` instead of fabricating a fact.
 - `POST /v1/gaps` — opt-in registration of public missing-information topics, with basic sensitive-input rejection and deduplication.
 - `GET /v1/results/{id}` — retrieve previously resolved public result by UUID.
-- `GET /v1/catalog`, `/health`, `/openapi.json`, `/docs` — agent discovery, operational health and API schema.
+- `GET /v1/catalog`, `/health`, `/openapi.json`, `/docs`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/.well-known/agent.json` — agent/web discovery, operational health and API schema. The `agent.json` is only descriptive metadata, not a claim of official registry support.
 - `GET /v1/metrics` — protected by bearer admin token; returns 30-day event totals and frequent public gaps. User/client counts are **estimates** based on HMAC-hashed network addresses, not verified humans or agents.
-- SQLite cache, retention pruning, API quotas, a global upstream-request ceiling, short HTTP timeouts and a fixed upstream hostname (no arbitrary URL fetching).
-- Official MCP SDK v2 adapter (`/mcp/`) with two tools. SDK dependency is required. MCP transport on a real hostname still needs deployment validation.
+- SQLite cache, retention pruning, API quotas, 80/day default global upstream ceiling plus one uncached NVD fetch per ten seconds (to protect the NVD no-key rate allowance), short HTTP timeouts and a fixed upstream hostname (no arbitrary URL fetching).
+- Official MCP SDK v2 adapter (`/mcp/`) with two tools. SDK dependency is required. Remote HTTPS MCP initialization and a real SDK `tools/list` and `tools/call` were successfully validated. All MCP clients share a conservative quota.
 - Payments are explicitly **disabled**. `GET /v1/payments` states this; no wallet, facilitator or paid mainnet route is configured.
 
 ## Start locally
@@ -44,7 +44,7 @@ pytest -q
 
 The default dev REST entrypoint `uvicorn agent404.api:app` works without the MCP extra for offline smoke tests; it is not the full product.
 
-## Isolated Docker staging (do not point production DNS at this blindly)
+## Isolated Docker staging (tested on an existing controlled HTTPS domain)
 
 ```bash
 cp .env.example .env
@@ -54,11 +54,11 @@ cd deploy
 # docker compose up -d --build  # only in an authorized, isolated deployment directory
 ```
 
-The compose file exposes only `127.0.0.1:18044` on the Docker host, runs as non-root with dropped capabilities and CPU/memory limits. It cannot directly modify other project databases. A separate TLS reverse proxy and DNS are still required. There is **no automatic install, DNS edit, service restart or GitHub Action deployment**.
+The compose file exposes only `127.0.0.1:18044` on the Docker host, runs as non-root with dropped capabilities and CPU/memory limits. It cannot directly modify other project databases. A separate TLS reverse proxy and DNS are required for a NEW deployment. The controlled experiment has already been installed behind Caddy; there is **no automatic install, DNS edit, service restart or GitHub Action deployment** for subsequent clones.
 
 ## Experiment success thresholds (pre-registered, not forecasts)
 
-Within 30 days of a **public** launch: 100 independent external integrations (estimated), 20 separate payers **only after payments are properly enabled**, 25% returning integrations, positive per-request contribution margin, and zero critical security incidents. Before payment integration, substitute measurable repeat intent (returning use of the free endpoint) and treat willingness-to-pay as unproven.
+Within 30 days of a **public** launch: 100 independent external integrations (estimated), 20 separate payers **only after payments are properly enabled**, 25% returning integrations, positive per-request contribution margin, and zero critical security incidents. Before payment integration, substitute measurable repeat intent (returning use of the free endpoint) and treat willingness-to-pay as unproven. The live experiment began on **9 November 2026**; end-of-window analysis is due around **8 December 2026**.
 
 **No automatic customer discovery guarantee:** listing MCP or publishing an API does not cause ChatGPT or other agents to install it. Distinguish visitors, crawlers, API clients, controlled tests and payment-capable autonomous agents. Use the public tool protocol and discovery routes as the experiment, not as evidence of traction.
 
@@ -85,10 +85,18 @@ Current research references:
 
 ## Roadmap — remaining external steps
 
-1. Provision a **new isolated writable** server location with explicitly approved permissions; do not reuse an unrelated project's directory.
-2. Create a standalone Git repository and add this source; run security/dependency scans, integration tests of MCP against actual v2 SDK.
-3. Provision TLS hostname and configure exact MCP allowed Hosts; validate origin, proxy headers and abuse protections.
-4. Start isolated staging, inspect logs, verify NVD live, run end-to-end remote MCP and REST tests.
-5. Prepare `server.json` **with the real, tested public HTTPS URL** and verify domain/GitHub namespace ownership. Publish via `mcp-publisher` only after service health checks succeed.
+1. **Completed:** Provisioned a new isolated writable service at `/srv/agent404-experiment` with generated local-only secrets. Do not reuse an unrelated project's directory.
+2. **Completed in draft PR #1:** source on an isolated branch of `aibitious/ai-micropayment-network`, with dedicated CI and 18 local tests (16 at initial go-live). No merge to its default branch.
+3. **Completed:** TLS hostname `404.eostorm.com` and restricted MCP allowed Hosts, trusted proxy forwarding, quotas and privacy controls. Still a pilot, not an audited security product.
+4. **Completed:** isolated Docker instance, Caddy HTTPS, real NVD lookup, remote MCP initialization and SDK tool call. Existing site sanity checks returned their expected responses.
+5. **Partially completed:** `server.json` passed official registry validation; an Ed25519 public DNS TXT proof was published, but publisher identity authentication and official registry publishing remain blocked/not performed. Do not claim official listing.
 6. For x402 use a **testnet only** first; require an authenticated facilitator supporting V2 and an authorized settlement destination. Never copy private keys to source files or enable mainnet without a separate financial/legal gate.
-7. Measure real traffic for 30 days, report costs and retention; validate whether any information category has repeat demand that search tools don't already satisfy.
+7. **Started:** 30 daily read-only check-ins for 9 November–8 December 2026. Internal smoke tests exist in the counters; do not mislabel them as organic traffic. Measure real traffic, costs and retention before a go/no-go decision.
+
+## Live experiment and safety
+
+- **Website:** https://404.eostorm.com/ · [OpenAPI](https://404.eostorm.com/docs) · [MCP endpoint](https://404.eostorm.com/mcp/)
+- **Development branch:** https://github.com/aibitious/ai-micropayment-network/pull/1 (draft; not merged).
+- **Registry:** metadata validated but **not published**. Merely hosting an MCP endpoint does not make it automatically discoverable by every AI agent.
+- **No money movement:** `x402` is deliberately disabled and no live wallet, settlement or payment collection has been configured.
+- **Caveat:** counting hashed IPs approximates API clients, not agent identities or unique users. Operators must mark smoke tests separately from organic traffic.
