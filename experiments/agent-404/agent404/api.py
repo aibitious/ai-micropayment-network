@@ -45,6 +45,14 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
     app.state.resolver = engine
     app.state.store = store
 
+    @app.middleware('http')
+    async def canonical_prefix(request: Request, call_next):
+        # Only the reverse proxy sets this exact header for /404/ requests.
+        if (request.headers.get('host', '').lower() == 'aibitious.com'
+                and request.headers.get('x-forwarded-prefix') == '/404'):
+            request.scope['root_path'] = '/404'
+        return await call_next(request)
+
     def client_identity(request: Request) -> str:
         # Intentionally DO NOT trust user-supplied X-Forwarded-For or User-Agent as identity.
         # Reverse-proxy real IP handling needs deployment-specific trusted proxy config.
@@ -58,32 +66,32 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         <title>AIBITIOUS 404 — verify public facts</title>
         <style>body{background:#0d1420;color:#e4ecf4;font:17px system-ui;max-width:800px;margin:10vh auto;padding:2rem}h1{font-size:3rem}a{color:#91c6ff}code,pre{background:#1b2836;padding:1rem;display:block;overflow:auto;border-radius:8px}p{line-height:1.6}</style>
         <h1>404 — What AI still can't verify</h1><p>One verifiable fact at a time. This experiment starts with official NIST CVE records; more categories are intentionally not claimed.</p>
-        <pre>POST /v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
-        <p><a href="/docs">OpenAPI docs</a> · <a href="/v1/catalog">Agent catalog</a> · <a href="/health">Health</a></p>
+        <pre>POST v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
+        <p><a href="docs">OpenAPI docs</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
         <p>Free experimental access. No payments enabled. Do not submit secrets or personal information.</p></html>'''
 
     @app.get('/robots.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def robots():
         return ('User-agent: *\nAllow: /\nDisallow: /v1/metrics\n'
-                'Sitemap: https://404.eostorm.com/sitemap.xml\n')
+                'Sitemap: https://aibitious.com/404/sitemap.xml\n')
 
     @app.get('/llms.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def llms():
         return ("# AIBITIOUS 404 – verifiable CVE records\n\n"
                 "Free public experiment; verifies exact CVE identifiers against NIST NVD. "
                 "Does not scan hosts, execute code, or accept payments.\n\n"
-                "- REST docs: https://404.eostorm.com/docs\n"
-                "- OpenAPI: https://404.eostorm.com/openapi.json\n"
-                "- Agent catalog: https://404.eostorm.com/v1/catalog\n"
-                "- Streamable HTTP MCP: https://404.eostorm.com/mcp/\n"
+                "- REST docs: https://aibitious.com/404/docs\n"
+                "- OpenAPI: https://aibitious.com/404/openapi.json\n"
+                "- Agent catalog: https://aibitious.com/404/v1/catalog\n"
+                "- Streamable HTTP MCP: https://aibitious.com/404/mcp/\n"
                 "- Limitations: only one CVE per lookup; official NVD evidence, not independent validation.\n")
 
     @app.get('/sitemap.xml', include_in_schema=False)
     async def sitemap():
         xml = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-               "<url><loc>https://404.eostorm.com/</loc></url>"
-               "<url><loc>https://404.eostorm.com/docs</loc></url>"
+               "<url><loc>https://aibitious.com/404/</loc></url>"
+               "<url><loc>https://aibitious.com/404/docs</loc></url>"
                "</urlset>")
         return Response(content=xml, media_type='application/xml')
 
@@ -91,8 +99,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
     async def agent_metadata():
         # Descriptive public metadata, NOT a claim of official MCP Registry enrollment.
         return {'name': 'AIBITIOUS 404', 'description': 'Free NVD CVE evidence verification',
-                'mcp': 'https://404.eostorm.com/mcp/',
-                'openapi': 'https://404.eostorm.com/openapi.json',
+                'mcp': 'https://aibitious.com/404/mcp/',
+                'openapi': 'https://aibitious.com/404/openapi.json',
                 'registry_status': 'not_registered', 'payments_enabled': False}
 
     @app.get('/health')
