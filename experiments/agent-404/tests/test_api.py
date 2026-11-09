@@ -153,3 +153,21 @@ def test_prefixed_openapi_docs(client):
     assert response.status_code==200
     assert '/404/openapi.json' in response.text
     assert client.get('/health',headers=headers).status_code==200
+
+
+def test_untrusted_forwarded_client_ip_cannot_bypass_quota(tmp_path):
+    app=create_app(db_path=str(tmp_path/'untrusted.sqlite3'),secret='secret')
+    app.state.resolver.daily_limit=1
+    with TestClient(app) as c:
+        assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.1'}).status_code==200
+        assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.2'}).status_code==429
+
+
+def test_trusted_reverse_proxy_separates_client_quotas(tmp_path,monkeypatch):
+    monkeypatch.setenv('TRUSTED_PROXY_IPS','testclient')
+    app=create_app(db_path=str(tmp_path/'trusted.sqlite3'),secret='secret')
+    app.state.resolver.daily_limit=1
+    with TestClient(app) as c:
+        assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.1'}).status_code==200
+        assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.2'}).status_code==200
+        assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.2'}).status_code==429
