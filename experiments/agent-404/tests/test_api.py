@@ -124,7 +124,7 @@ def test_nonexistent_result(client):
 
 
 def test_discovery_endpoints(client):
-    assert 'https://404.eostorm.com/mcp/' in client.get('/llms.txt').text
+    assert 'https://aibitious.com/404/mcp/' in client.get('/llms.txt').text
     assert 'Sitemap:' in client.get('/robots.txt').text
     assert '<urlset' in client.get('/sitemap.xml').text
     data = client.get('/.well-known/agent.json').json()
@@ -145,3 +145,11 @@ def test_global_nvd_short_window_limit(tmp_path, monkeypatch):
         assert first.status_code == 200
         assert second.status_code == 429
         assert 'short-window' in second.text
+
+
+def test_prefixed_openapi_docs(client):
+    headers={'Host':'aibitious.com','X-Forwarded-Prefix':'/404'}
+    response=client.get('/docs',headers=headers)
+    assert response.status_code==200
+    assert '/404/openapi.json' in response.text
+    assert client.get('/health',headers=headers).status_code==200
