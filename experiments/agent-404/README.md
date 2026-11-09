@@ -1,6 +1,6 @@
 # AIBITIOUS 404 — agent-first missing-information experiment
 
-**Status: LIVE free API experiment at https://404.eostorm.com/; no payments enabled. MCP Registry listing is pending authentication.**
+**Status: LIVE free API experiment at https://aibitious.com/404/; no payments enabled. MCP Registry publishing is configured through GitHub Actions OIDC; verify public listing separately.**
 
 Goal: test whether independently operated AI agents discover and reuse a small, evidence-backed information API. The *first vertical* is deliberately narrow: resolving exact CVE IDs against the official NIST National Vulnerability Database (NVD). The project's long-term idea is to detect recurring missing-information needs, but this repository does **not** claim to verify arbitrary facts.
 
@@ -87,7 +87,7 @@ Current research references:
 
 1. **Completed:** Provisioned a new isolated writable service at `/srv/agent404-experiment` with generated local-only secrets. Do not reuse an unrelated project's directory.
 2. **Completed in draft PR #1:** source on an isolated branch of `aibitious/ai-micropayment-network`, with dedicated CI and 18 local tests (16 at initial go-live). No merge to its default branch.
-3. **Completed:** TLS hostname `404.eostorm.com` and restricted MCP allowed Hosts, trusted proxy forwarding, quotas and privacy controls. Still a pilot, not an audited security product.
+3. **Completed:** TLS hostname `aibitious.com/404` and restricted MCP allowed Hosts, trusted proxy forwarding, quotas and privacy controls. Still a pilot, not an audited security product.
 4. **Completed:** isolated Docker instance, Caddy HTTPS, real NVD lookup, remote MCP initialization and SDK tool call. Existing site sanity checks returned their expected responses.
 5. **Partially completed:** `server.json` passed official registry validation; an Ed25519 public DNS TXT proof was published, but publisher identity authentication and official registry publishing remain blocked/not performed. Do not claim official listing.
 6. For x402 use a **testnet only** first; require an authenticated facilitator supporting V2 and an authorized settlement destination. Never copy private keys to source files or enable mainnet without a separate financial/legal gate.
@@ -95,7 +95,7 @@ Current research references:
 
 ## Live experiment and safety
 
-- **Website:** https://404.eostorm.com/ · [OpenAPI](https://404.eostorm.com/docs) · [MCP endpoint](https://404.eostorm.com/mcp/)
+- **Website:** https://aibitious.com/404/ · [OpenAPI](https://aibitious.com/404/docs) · [MCP endpoint](https://aibitious.com/404/mcp/)
 - **Development branch:** https://github.com/aibitious/ai-micropayment-network/pull/1 (draft; not merged).
 - **Registry:** metadata validated but **not published**. Merely hosting an MCP endpoint does not make it automatically discoverable by every AI agent.
 - **No money movement:** `x402` is deliberately disabled and no live wallet, settlement or payment collection has been configured.
