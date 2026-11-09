@@ -115,7 +115,9 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         return {'name': 'AIBITIOUS 404', 'description': 'Free NVD CVE evidence verification',
                 'mcp': 'https://aibitious.com/404/mcp/',
                 'openapi': 'https://aibitious.com/404/openapi.json',
-                'registry_status': 'not_registered', 'payments_enabled': False}
+                'registry_status': 'registered' if os.environ.get('MCP_REGISTRY_STATUS') == 'registered' else 'not_registered',
+                'registry_name': 'io.github.aibitious/agent404' if os.environ.get('MCP_REGISTRY_STATUS') == 'registered' else None,
+                'payments_enabled': False}
 
     @app.get('/health')
     async def health():
