@@ -49,7 +49,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
     async def canonical_prefix(request: Request, call_next):
         # Only the reverse proxy sets this exact header for /404/ requests.
         if (request.headers.get('host', '').lower() == 'aibitious.com'
-                and request.headers.get('x-forwarded-prefix') == '/404'):
+                and request.headers.get('x-forwarded-prefix') == '/404'
+                and not request.scope.get('path', '').startswith('/mcp')):
             request.scope['root_path'] = '/404'
         return await call_next(request)
 
