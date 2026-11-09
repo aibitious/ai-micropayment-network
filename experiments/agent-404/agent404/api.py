@@ -2,6 +2,7 @@
 from __future__ import annotations
 from contextlib import asynccontextmanager
 import os
+import ipaddress
 import secrets
 import time
 from pathlib import Path
@@ -54,11 +55,23 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
             request.scope['root_path'] = '/404'
         return await call_next(request)
 
+    trusted_proxies = {v.strip() for v in os.environ.get('TRUSTED_PROXY_IPS', '').split(',') if v.strip()}
+
     def client_identity(request: Request) -> str:
-        # Intentionally DO NOT trust user-supplied X-Forwarded-For or User-Agent as identity.
-        # Reverse-proxy real IP handling needs deployment-specific trusted proxy config.
-        addr = request.client.host if request.client else 'unknown'
-        # Never allow a user-controlled header to bypass the per-client quota.
+        # Never trust X-Forwarded-For, User-Agent or X-Real-IP from arbitrary peers.
+        # The Caddy gateway overwrites X-Real-IP; only its exact Docker IP is trusted.
+        peer = request.client.host if request.client else 'unknown'
+        addr = peer
+        if peer in trusted_proxies:
+            raw = request.headers.get('x-real-ip', '').strip()
+            if len(raw) <= 45:
+                try:
+                    parsed = ipaddress.ip_address(raw)
+                except ValueError:
+                    pass
+                else:
+                    if not (parsed.is_loopback or parsed.is_multicast or parsed.is_unspecified):
+                        addr = str(parsed)
         return engine.identity(addr)
 
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
