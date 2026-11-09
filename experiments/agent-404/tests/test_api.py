@@ -171,3 +171,12 @@ def test_trusted_reverse_proxy_separates_client_quotas(tmp_path,monkeypatch):
         assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.1'}).status_code==200
         assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.2'}).status_code==200
         assert c.post('/v1/resolve',json={'question':'public unknown item'}, headers={'X-Real-IP':'198.51.100.2'}).status_code==429
+
+
+def test_registry_flag_can_reflect_verified_publication(tmp_path, monkeypatch):
+    monkeypatch.setenv('MCP_REGISTRY_STATUS', 'registered')
+    app=create_app(db_path=str(tmp_path/'registry.sqlite3'),secret='secret')
+    with TestClient(app) as c:
+        metadata=c.get('/.well-known/agent.json').json()
+        assert metadata['registry_status'] == 'registered'
+        assert metadata['registry_name'] == 'io.github.aibitious/agent404'
