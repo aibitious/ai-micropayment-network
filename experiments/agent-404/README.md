@@ -2,7 +2,7 @@
 
 ## The 10-tool portfolio (2026-11)
 
-**Status:** code and test coverage are available in this branch; independently validate the public deployment before marking any tool live.
+**Live since 10 Nov 2026:** ten tools are available at https://aibitious.com/404/tools/; public HTTPS/REST/MCP and v0.2.0 MCP Registry publishing were verified. Code stays in a draft PR; no paid use or independent adoption is claimed.
 
 The original CVE Verify is the baseline. Nine additional bounded and offline experiments share the public REST/MCP interface and each has separate telemetry:
 
@@ -26,7 +26,7 @@ Private analytics: \`GET /v1/lab/metrics\` requires the existing admin bearer to
 Experiment protocol and selection rules: [10-tool portfolio](docs/PORTFOLIO_10_EXPERIMENT.md).
 
 
-**Status: LIVE free API experiment at https://aibitious.com/404/; no payments enabled. MCP Registry publishing is configured through GitHub Actions OIDC; verify public listing separately.**
+**Status: LIVE ten-tool free experiment at https://aibitious.com/404/; no payments enabled. Official MCP Registry version 0.2.0 was confirmed in the public registry.**
 
 Goal: test whether independently operated AI agents discover and reuse a small, evidence-backed information API. The *first vertical* is deliberately narrow: resolving exact CVE IDs against the official NIST National Vulnerability Database (NVD). The project's long-term idea is to detect recurring missing-information needs, but this repository does **not** claim to verify arbitrary facts.
 
