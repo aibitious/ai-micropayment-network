@@ -1,0 +1,64 @@
+name: Publish AIBITIOUS 404 to MCP Registry
+on:
+  push:
+    branches:
+      - feature/agent404-experiment-20261109
+    paths:
+      - 'experiments/agent-404/server.json'
+      - '.github/workflows/agent404-publish-registry.yml'
+permissions: {}
+jobs:
+  publish:
+    if: github.repository == 'aibitious/ai-micropayment-network'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: experiments/agent-404/requirements-dev.txt
+      - name: Test isolated 404 experiment
+        working-directory: experiments/agent-404
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pytest -q
+      - name: Install official MCP publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error "$url" -o /tmp/publisher.tar.gz
+          tar -xzf /tmp/publisher.tar.gz mcp-publisher
+          chmod +x mcp-publisher
+      - name: Validate registry descriptor
+        run: ./mcp-publisher validate experiments/agent-404/server.json
+      - name: Check whether this exact version is already published
+        id: check_registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          descriptor="experiments/agent-404/server.json"
+          name=$(jq -r .name "$descriptor")
+          version=$(jq -r .version "$descriptor")
+          remote=$(jq -r '.remotes[0].url' "$descriptor")
+          curl --fail --silent --show-error --location             "https://registry.modelcontextprotocol.io/v0/servers?search=agent404&limit=100" -o /tmp/registry.json
+          if jq -e --arg n "$name" --arg v "$version"             '.servers[] | select(.server.name == $n and .server.version == $v)' /tmp/registry.json >/dev/null; then
+            if ! jq -e --arg n "$name" --arg v "$version" --arg u "$remote"               '.servers[] | select(.server.name == $n and .server.version == $v) | .server.remotes[] | select(.url == $u)' /tmp/registry.json >/dev/null; then
+              echo "Existing same-version entry has a different endpoint; bump version and review."
+              exit 1
+            fi
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Exact version and remote URL already published."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Authenticate with GitHub OIDC, no shared secrets
+        if: steps.check_registry.outputs.publish == 'true'
+        run: ./mcp-publisher login github-oidc
+      - name: Publish remote MCP endpoint
+        if: steps.check_registry.outputs.publish == 'true'
+        run: ./mcp-publisher publish experiments/agent-404/server.json

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aibitious/agent404",
+  "title": "AIBITIOUS 404 LAB - Ten Free Agent Tools",
+  "description": "Ten free agent tools for CVE evidence, JSON/CSV checks, invoice math, API/MCP lint and data drift.",
+  "version": "0.2.0",
+  "repository": {
+    "url": "https://github.com/aibitious/ai-micropayment-network",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://aibitious.com/404/mcp/"
+    }
+  ]
+}

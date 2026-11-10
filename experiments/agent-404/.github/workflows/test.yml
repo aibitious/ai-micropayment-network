@@ -1,0 +1,19 @@
+name: Agent404 tests
+on:
+  push:
+    paths: ['agent404/**', 'tests/**', 'requirements*.txt', 'pyproject.toml', '.github/workflows/test.yml']
+  pull_request:
+    paths: ['agent404/**', 'tests/**', 'requirements*.txt', 'pyproject.toml', '.github/workflows/test.yml']
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
