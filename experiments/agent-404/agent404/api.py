@@ -82,8 +82,47 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         <style>body{background:#0d1420;color:#e4ecf4;font:17px system-ui;max-width:800px;margin:10vh auto;padding:2rem}h1{font-size:3rem}a{color:#91c6ff}code,pre{background:#1b2836;padding:1rem;display:block;overflow:auto;border-radius:8px}p{line-height:1.6}</style>
         <h1>404 LAB — Ten experiments for AI agents</h1><p>Free machine-readable tools for data quality, security signals, API preflight and official CVE evidence. No promises of guaranteed compliance or autonomous discovery.</p>
         <pre>POST v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
-        <p><a href="docs">OpenAPI docs</a> · <a href="v1/lab/catalog">10 tools</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
+        <p><a href="docs">OpenAPI docs</a> · <a href="tools/">10 tools</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
         <p>Free experimental access. No payments enabled. Do not submit secrets or personal information.</p></html>'''
+
+    @app.get('/tools/', response_class=HTMLResponse, include_in_schema=False)
+    async def tools_directory():
+        links = ''.join(
+            f'<li><a href="{slug}">{title}</a> — {desc}</li>'
+            for slug, (title, desc) in TOOLS.items()
+        )
+        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                '<title>AIBITIOUS 404 LAB: 10 free agent tools</title>'
+                '<style>body{max-width:800px;margin:5vh auto;padding:1em;font:17px system-ui;line-height:1.7}</style>'
+                '<h1>Ten experiments. One shared scoreboard.</h1>'
+                '<p>CVE Verify is already running at <a href="../docs">/v1/resolve</a>. '
+                'The other nine experiments run offline and are free.</p><ol>' + links + '</ol>'
+                '<p><a href="../v1/lab/catalog">Machine-readable catalog</a> · '
+                '<a href="../docs">OpenAPI documentation</a> · '
+                '<a href="../">AIBITIOUS 404</a></p>'
+                '<p>Experimental checks are not compliance, legal or tax certification. '
+                'Do not submit sensitive or private real-world data.</p></html>')
+
+    @app.get('/tools/{slug}', response_class=HTMLResponse, include_in_schema=False)
+    async def tool_page(slug: str):
+        if slug not in TOOLS:
+            raise HTTPException(404, 'Unknown LAB tool')
+        title, desc = TOOLS[slug]
+        from html import escape
+        title = escape(title)
+        desc = escape(desc)
+        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{title} — AIBITIOUS 404 LAB</title>'
+                '<style>body{max-width:800px;margin:5vh auto;padding:1em;font:17px system-ui;line-height:1.7}</style>'
+                f'<h1>{title}</h1><p>{desc}</p>'
+                f'<p><strong>REST:</strong> POST https://aibitious.com/404/v1/lab/{slug}</p>'
+                '<p><strong>MCP:</strong> https://aibitious.com/404/mcp/ (find matching tool name in tools/list)</p>'
+                f'<p>Free experimental use. {escape(__import__("agent404.lab", fromlist=["LIMITATIONS"]).LIMITATIONS[slug])}</p>'
+                '<p><a href="../v1/lab/catalog">Input specifications</a> · '
+                '<a href="../docs">API schema</a> · <a href="./">All tools</a></p>'
+                '<p>Process only synthetic or non-sensitive data. No payments accepted.</p></html>')
 
     @app.get('/robots.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def robots():
@@ -99,7 +138,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 "- OpenAPI: https://aibitious.com/404/openapi.json\n"
                 "- Agent catalog: https://aibitious.com/404/v1/catalog\n"
                 "- Streamable HTTP MCP: https://aibitious.com/404/mcp/\n"
-                "- Tools: https://aibitious.com/404/v1/lab/catalog\n"
+                "- Tools: https://aibitious.com/404/tools/ and machine-readable https://aibitious.com/404/v1/lab/catalog\n"
                 "- Limits: 20 KB per validator payload; all nine validators use in-memory input only.\n"
                 "- No real secrets, personal records, financial documents or production data should be submitted.\n")
 
@@ -110,6 +149,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                "<url><loc>https://aibitious.com/404/</loc></url>"
                "<url><loc>https://aibitious.com/404/docs</loc></url>"
                "<url><loc>https://aibitious.com/404/v1/lab/catalog</loc></url>"
+               "<url><loc>https://aibitious.com/404/tools/</loc></url>" +
+               ''.join(f"<url><loc>https://aibitious.com/404/tools/{slug}</loc></url>" for slug in TOOLS)
                "</urlset>")
         return Response(content=xml, media_type='application/xml')
 
