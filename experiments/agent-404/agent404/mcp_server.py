@@ -14,7 +14,7 @@ from .api import create_app
 from .core import Limited, UpstreamFailed
 from .lab import LabInputError, run_lab
 
-mcp = MCPServer('AIBITIOUS 404 - Official CVE Evidence')
+mcp = MCPServer('AIBITIOUS 404 LAB - Ten Agent Experiments')
 rest = create_app()
 
 
