@@ -180,3 +180,54 @@ def test_registry_flag_can_reflect_verified_publication(tmp_path, monkeypatch):
         metadata=c.get('/.well-known/agent.json').json()
         assert metadata['registry_status'] == 'registered'
         assert metadata['registry_name'] == 'io.github.aibitious/agent404'
+
+
+def test_lab_catalog_has_nine_new_prototypes(client):
+    r=client.get('/v1/lab/catalog')
+    assert r.status_code==200
+    j=r.json()
+    assert j["experiments"]==10 and len(j["tools"])==9
+    assert len(set(x["slug"] for x in j["tools"]))==9
+
+
+def test_lab_rest_pipeline_and_rate_limit(tmp_path):
+    app=create_app(db_path=str(tmp_path/'lab.sqlite3'),secret="only-for-testing")
+    app.state.resolver.per_minute_limit=2
+    with TestClient(app) as c:
+        for _ in range(2):
+            r=c.post('/v1/lab/header_audit',json={"headers": {"content-type":"text/html"}})
+            assert r.status_code==200 and r.json()["tool"]=="header_audit"
+        assert c.post('/v1/lab/header_audit',json={"headers":{}}).status_code==429
+        # Different tools get their own equal quota, not a global 404 quota.
+        assert c.post('/v1/lab/schema_diff',json={"before":{},"after":{}}).status_code==200
+
+
+def test_lab_rejects_unknown_and_large_payload(client):
+    assert client.post('/v1/lab/unknown',json={}).status_code==404
+    assert client.post('/v1/lab/secret_shield',json={"text":"x"*21000}).status_code==422
+
+
+def test_lab_private_analytics_count_without_raw_data(tmp_path,monkeypatch):
+    monkeypatch.setenv('ADMIN_TOKEN','local-test-token')
+    app=create_app(db_path=str(tmp_path/'metrics.sqlite3'),secret='local-secret')
+    with TestClient(app) as c:
+        content={"headers":{"x-customer-private-note":"value-not-to-store"}}
+        r=c.post('/v1/lab/header_audit',json=content)
+        assert r.status_code==200
+        assert c.get('/v1/lab/metrics').status_code==403
+        m=c.get('/v1/lab/metrics',headers={"Authorization":"Bearer local-test-token"}).json()
+        assert m["tool_channels"][0]["tool"]=="header_audit"
+        assert m["tool_channels"][0]["calls"]==1
+        assert "value-not-to-store" not in str(m)
+
+
+def test_lab_internal_probe_excluded_from_external_metrics(tmp_path,monkeypatch):
+    monkeypatch.setenv('ADMIN_TOKEN','private-test-token')
+    app=create_app(db_path=str(tmp_path/'internal.sqlite3'),secret='secret')
+    with TestClient(app) as c:
+        r=c.post('/v1/lab/schema_diff',json={"before":{},"after":{}},
+                headers={'x-404-internal-test':'private-test-token'})
+        assert r.status_code==200
+        m=c.get('/v1/lab/metrics',headers={"Authorization":"Bearer private-test-token"}).json()
+        assert len(m["tool_channels"])==0
+        assert m["internal_test_events"]["schema_diff"]==1
