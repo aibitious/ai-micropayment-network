@@ -6,11 +6,12 @@ import ipaddress
 import secrets
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 from .core import Resolver, Store, Limited, UpstreamFailed
+from .lab import LabInputError, TOOLS, describe_tools, run_lab
 
 
 class ResolveInput(BaseModel):
@@ -41,8 +42,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         store.prune()
         yield
 
-    app = FastAPI(title='AIBITIOUS 404', version='0.1.0', lifespan=lifespan,
-                  description='Evidence-based public CVE lookup and opt-in missing-data signal. No payments.')
+    app = FastAPI(title='AIBITIOUS 404', version='0.2.0', lifespan=lifespan,
+                  description='10 free agent tools: CVE evidence and nine bounded deterministic checks. No payments.')
     app.state.resolver = engine
     app.state.store = store
 
@@ -79,9 +80,9 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         return '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>AIBITIOUS 404 — verify public facts</title>
         <style>body{background:#0d1420;color:#e4ecf4;font:17px system-ui;max-width:800px;margin:10vh auto;padding:2rem}h1{font-size:3rem}a{color:#91c6ff}code,pre{background:#1b2836;padding:1rem;display:block;overflow:auto;border-radius:8px}p{line-height:1.6}</style>
-        <h1>404 — What AI still can't verify</h1><p>One verifiable fact at a time. This experiment starts with official NIST CVE records; more categories are intentionally not claimed.</p>
+        <h1>404 LAB — Ten experiments for AI agents</h1><p>Free machine-readable tools for data quality, security signals, API preflight and official CVE evidence. No promises of guaranteed compliance or autonomous discovery.</p>
         <pre>POST v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
-        <p><a href="docs">OpenAPI docs</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
+        <p><a href="docs">OpenAPI docs</a> · <a href="v1/lab/catalog">10 tools</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
         <p>Free experimental access. No payments enabled. Do not submit secrets or personal information.</p></html>'''
 
     @app.get('/robots.txt', response_class=PlainTextResponse, include_in_schema=False)
@@ -92,13 +93,15 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
     @app.get('/llms.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def llms():
         return ("# AIBITIOUS 404 – verifiable CVE records\n\n"
-                "Free public experiment; verifies exact CVE identifiers against NIST NVD. "
+                "Free public experiment: ten agent-facing experiments including official CVE lookup and nine offline validators. "
                 "Does not scan hosts, execute code, or accept payments.\n\n"
                 "- REST docs: https://aibitious.com/404/docs\n"
                 "- OpenAPI: https://aibitious.com/404/openapi.json\n"
                 "- Agent catalog: https://aibitious.com/404/v1/catalog\n"
                 "- Streamable HTTP MCP: https://aibitious.com/404/mcp/\n"
-                "- Limitations: only one CVE per lookup; official NVD evidence, not independent validation.\n")
+                "- Tools: https://aibitious.com/404/v1/lab/catalog\n"
+                "- Limits: 20 KB per validator payload; all nine validators use in-memory input only.\n"
+                "- No real secrets, personal records, financial documents or production data should be submitted.\n")
 
     @app.get('/sitemap.xml', include_in_schema=False)
     async def sitemap():
@@ -106,13 +109,14 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
                "<url><loc>https://aibitious.com/404/</loc></url>"
                "<url><loc>https://aibitious.com/404/docs</loc></url>"
+               "<url><loc>https://aibitious.com/404/v1/lab/catalog</loc></url>"
                "</urlset>")
         return Response(content=xml, media_type='application/xml')
 
     @app.get('/.well-known/agent.json', include_in_schema=False)
     async def agent_metadata():
         # Descriptive public metadata, NOT a claim of official MCP Registry enrollment.
-        return {'name': 'AIBITIOUS 404', 'description': 'Free NVD CVE evidence verification',
+        return {'name': 'AIBITIOUS 404', 'description': '10 free agent tools: official CVE evidence and nine deterministic checks',
                 'mcp': 'https://aibitious.com/404/mcp/',
                 'openapi': 'https://aibitious.com/404/openapi.json',
                 'registry_status': 'registered' if os.environ.get('MCP_REGISTRY_STATUS') == 'registered' else 'not_registered',
@@ -121,15 +125,16 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.get('/health')
     async def health():
-        return {'status': 'ok', 'service': 'aibitious-404', 'version': '0.1.0'}
+        return {'status': 'ok', 'service': 'aibitious-404', 'version': '0.2.0', 'experiments': 10}
 
     @app.get('/v1/catalog')
     async def catalog():
         return {
-            'name': 'AIBITIOUS 404', 'version': '0.1.0',
-            'description': 'Verify an exact CVE via the US NIST National Vulnerability Database',
+            'name': 'AIBITIOUS 404 LAB', 'version': '0.2.0',
+            'description': '10 free agent-facing experiments; CVE verification plus nine bounded deterministic offline tools',
             'openapi': '/openapi.json', 'resolve': '/v1/resolve', 'report_gap': '/v1/gaps',
-            'limitations': ['CVE only', 'official NVD data', 'not a penetration test', 'no payment support'],
+            'lab_catalog': '/v1/lab/catalog', 'lab_tools': describe_tools(),
+            'limitations': ['Only CVE lookup fetches official NVD data', 'offline tools do not certify security, tax compliance or source correctness', 'no payment support'],
             'price': {'amount': 0, 'currency': 'USD', 'note': 'free experiment'},
             'mcp': {'endpoint': '/mcp/', 'note': 'present only when official SDK v2 is installed and enabled'},
             'privacy': 'Gap topics are saved only on explicit consent. Do not submit personal data or secrets.',
@@ -159,6 +164,44 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         result = engine.report_gap(query.topic, query.consent_to_aggregate)
         store.event(identity, 'gap', result['status'])
         return result
+
+    @app.get('/v1/lab/catalog')
+    async def lab_catalog():
+        return {'name': 'AIBITIOUS 404 LAB', 'version': '0.2.0',
+                'experiments': 10, 'baseline': {'slug': 'cve_verify', 'endpoint': '/v1/resolve'},
+                'tools': describe_tools(), 'billing': 'disabled',
+                'privacy': 'Inputs processed in memory; no raw input stored in LAB telemetry. Use synthetic/public data only.'}
+
+    @app.post('/v1/lab/{slug}')
+    async def lab_call(slug: str, payload: dict[str, Any], request: Request):
+        if slug not in TOOLS:
+            raise HTTPException(404, 'Unknown LAB experiment')
+        identity = client_identity(request)
+        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
+        start = time.perf_counter()
+        outcome = 'error'
+        try:
+            engine.gate(identity, 'lab:' + slug)
+            result = run_lab(slug, payload)
+            outcome = result['status']
+            return result
+        except Limited as exc:
+            outcome = 'rate_limited'
+            raise HTTPException(429, str(exc), headers={'Retry-After': '60'})
+        except LabInputError as exc:
+            outcome = 'invalid_input'
+            raise HTTPException(422, str(exc))
+        finally:
+            ms = int((time.perf_counter()-start)*1000)
+            store.lab_event(slug, identity, 'rest', outcome, ms, internal)
+
+    @app.get('/v1/lab/metrics', include_in_schema=False)
+    async def lab_metrics(authorization: str = Header(default='')):
+        if not admin:
+            raise HTTPException(503, 'admin metrics not configured')
+        if not secrets.compare_digest(authorization, 'Bearer '+admin):
+            raise HTTPException(403, 'forbidden')
+        return store.lab_metrics()
 
     @app.get('/v1/results/{result_id}')
     async def result(result_id: str):
