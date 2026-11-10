@@ -134,9 +134,14 @@ class Store:
                          GROUP BY tool,channel ORDER BY tool,channel''',(after,)).fetchall()
             internal = db.execute('''SELECT tool,COUNT(*) AS n FROM lab_events
                                      WHERE at>=? AND internal=1 GROUP BY tool''',(after,)).fetchall()
+            repeats = db.execute('''SELECT tool,COUNT(*) AS estimated_rest_returning_network_ids
+                       FROM (SELECT tool,identity,COUNT(DISTINCT DATE(at,'unixepoch')) AS active_days
+                             FROM lab_events WHERE at>=? AND internal=0 AND channel='rest'
+                             GROUP BY tool,identity) WHERE active_days>=2 GROUP BY tool''',(after,)).fetchall()
             cve = db.execute('''SELECT COUNT(*) AS n,COUNT(DISTINCT identity) AS estimated_client_ids
                                 FROM events WHERE at>=? AND kind='resolve' ''',(after,)).fetchone()
             return {'window_start_unix':after,'tool_channels':[dict(r) for r in rows],
+                    'estimated_rest_returning_network_ids':{r['tool']:r['estimated_rest_returning_network_ids'] for r in repeats},
                     'internal_test_events':{r['tool']:r['n'] for r in internal},
                     'cve_baseline':dict(cve),
                     'note':'REST unique clients are HMAC network-ID estimates; MCP uses a shared anonymous bucket, so unique MCP agents are unknown. Crawlers are not automatically excluded. No raw payloads are retained.'}
