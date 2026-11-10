@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from mcp.server import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import ToolAnnotations
 from .api import create_app
 from .core import Limited, UpstreamFailed
 from .lab import LabInputError, run_lab
@@ -18,6 +19,8 @@ from . import wave2
 
 mcp = MCPServer('AIBITIOUS 404 LAB - Ten Agent Experiments')
 rest = create_app()
+offline_readonly = ToolAnnotations(read_only_hint=True, destructive_hint=False,
+                                   idempotent_hint=False, open_world_hint=False)
 
 
 @mcp.tool()
@@ -148,31 +151,31 @@ def _mcp_wave2(slug: str, payload: dict) -> dict:
         rest.state.store.wave2_event(slug, identity, 'launch', outcome, 'mcp')
 
 
-@mcp.tool()
+@mcp.tool(annotations=offline_readonly)
 async def simulate_agent_action_policy(action: dict, rules: list[dict]) -> dict:
     """Dry-run one proposed tool action against explicit allow/deny/approval rules; no enforcement."""
     return _mcp_wave2('action_policy', {'action': action, 'rules': rules})
 
 
-@mcp.tool()
+@mcp.tool(annotations=offline_readonly)
 async def plan_workflow_recovery(steps: list[dict]) -> dict:
     """Plan reverse-order compensations for a supplied workflow DAG; never execute actions."""
     return _mcp_wave2('workflow_recovery', {'steps': steps})
 
 
-@mcp.tool()
+@mcp.tool(annotations=offline_readonly)
 async def triage_webhook_deliveries(attempts: list[dict]) -> dict:
     """Find duplicate, failed and rate-limited deliveries from supplied HTTP status metadata."""
     return _mcp_wave2('webhook_triage', {'attempts': attempts})
 
 
-@mcp.tool()
+@mcp.tool(annotations=offline_readonly)
 async def check_claim_provenance(claims: list[dict], sources: list[dict]) -> dict:
     """Check whether supplied claim references reach at least one declared source; not fact checking."""
     return _mcp_wave2('claim_provenance', {'claims': claims, 'sources': sources})
 
 
-@mcp.tool()
+@mcp.tool(annotations=offline_readonly)
 async def minimize_agent_data(fields: list[dict], allowed_fields: list[str],
                               max_retention_days: int) -> dict:
     """Check declared fields, retention and model transfer against a supplied local policy."""
@@ -188,7 +191,7 @@ def _register_wave2_payload_tool(slug: str) -> None:
     tool.__name__ = slug
     example = json.dumps(wave2.EXAMPLES[slug], separators=(',', ':'))
     tool.__doc__ = f'{description} Offline check. Supply payload like {example}. Advisory result only.'
-    mcp.tool(name=slug, title=title, description=tool.__doc__)(tool)
+    mcp.tool(name=slug, title=title, description=tool.__doc__, annotations=offline_readonly)(tool)
 
 
 for _slug in wave2.wave2_more.TOOLS:

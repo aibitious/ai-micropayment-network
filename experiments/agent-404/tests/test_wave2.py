@@ -31,6 +31,9 @@ def test_mcp_exposes_all_distinct_tools_with_examples():
     for slug in wave2.wave2_more.TOOLS:
         tool = next(item for item in listed if item.name == slug)
         assert 'Supply payload like' in tool.description
+        assert tool.annotations.read_only_hint is True
+        assert tool.annotations.open_world_hint is False
+        assert tool.annotations.idempotent_hint is False
 
 
 def test_every_prototype_rest_route(tmp_path):

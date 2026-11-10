@@ -17,6 +17,12 @@ covers webhook diagnosis; [NVIDIA SkillSpector](https://github.com/NVIDIA/skills
 scans agent skills. [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/)
 notes privacy risks in tool arguments and traces. The niche hypothesis is a
 small framework-neutral **pre-action check** with no integration bill.
+The MCP community's [tool-annotation discussion](https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/)
+explicitly treats risk flags as untrusted hints, while an open
+[tool-scope proposal](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/1880)
+shows that fine-grained scope communication is still being worked through.
+These are evidence of a design gap, not evidence that this implementation
+solves production authorization or that buyers exist.
 
 ## Forty ideas screened
 
