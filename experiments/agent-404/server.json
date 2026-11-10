@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aibitious/agent404",
   "title": "AIBITIOUS 404 LAB - Ten Free Agent Tools",
-  "description": "Ten experimental agent utilities: official NIST CVE evidence plus nine bounded offline checks for JSON schemas, CSV, invoice math, secret patterns, OpenAPI, MCP metadata, HTTP headers, robots policies and JSON shape drift. All free; no payments.",
+  "description": "Ten free agent tools: NVD CVE lookup, JSON/CSV checks, invoice math, API/MCP lint and security signals.",
   "version": "0.2.0",
   "repository": {
     "url": "https://github.com/aibitious/ai-micropayment-network",
