@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 from .core import Resolver, Store, Limited, UpstreamFailed
-from .lab import LabInputError, TOOLS, describe_tools, run_lab
+from .lab import LabInputError, TOOLS, LIMITATIONS, describe_tools, run_lab
 
 
 class ResolveInput(BaseModel):
@@ -119,7 +119,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 f'<h1>{title}</h1><p>{desc}</p>'
                 f'<p><strong>REST:</strong> POST https://aibitious.com/404/v1/lab/{slug}</p>'
                 '<p><strong>MCP:</strong> https://aibitious.com/404/mcp/ (find matching tool name in tools/list)</p>'
-                f'<p>Free experimental use. {escape(__import__("agent404.lab", fromlist=["LIMITATIONS"]).LIMITATIONS[slug])}</p>'
+                f'<p>Free experimental use. {escape(LIMITATIONS[slug])}</p>'
                 '<p><a href="../v1/lab/catalog">Input specifications</a> · '
                 '<a href="../docs">API schema</a> · <a href="./">All tools</a></p>'
                 '<p>Process only synthetic or non-sensitive data. No payments accepted.</p></html>')
@@ -151,7 +151,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                "<url><loc>https://aibitious.com/404/v1/lab/catalog</loc></url>"
                "<url><loc>https://aibitious.com/404/tools/</loc></url>" +
                ''.join(f"<url><loc>https://aibitious.com/404/tools/{slug}</loc></url>" for slug in TOOLS)
-               "</urlset>")
+               + "</urlset>")
         return Response(content=xml, media_type='application/xml')
 
     @app.get('/.well-known/agent.json', include_in_schema=False)
