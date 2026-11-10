@@ -6,6 +6,42 @@ from agent404.lab import LabInputError
 from agent404 import wave2
 
 
+@pytest.mark.parametrize('slug', sorted(wave2.wave2_more.TOOLS))
+def test_expanded_prototype_examples(slug):
+    result = wave2.run(slug, wave2.EXAMPLES[slug])
+    assert result['tool'] == slug
+    assert result['status'] in ('ok','issues')
+    assert isinstance(result['details'], dict)
+
+
+def test_expanded_high_risk_decisions():
+    assert wave2.run('budget_envelope', {'limit_usd':'0','spent_usd':'0',
+        'reserved_usd':'0','proposed_worst_case_usd':'0.01'})['details']['admit'] is False
+    assert wave2.run('release_gate', {'required':['ci'],
+        'checks':[{'id':'ci','status':'pending'}]})['details']['ready'] is False
+    assert wave2.run('scope_delta', {'before':['read'],'after':['read','delete'],
+        'approved_additions':[]})['details']['unapproved_additions'] == ['delete']
+
+
+def test_mcp_exposes_all_distinct_tools_with_examples():
+    from agent404.mcp_server import mcp
+    listed = mcp._tool_manager.list_tools()
+    names = [tool.name for tool in listed]
+    assert len(names) == len(set(names)) == 33
+    for slug in wave2.wave2_more.TOOLS:
+        tool = next(item for item in listed if item.name == slug)
+        assert 'Supply payload like' in tool.description
+
+
+def test_every_prototype_rest_route(tmp_path):
+    app = create_app(db_path=str(tmp_path/'all.sqlite3'), secret='test-secret')
+    with TestClient(app) as client:
+        for slug in wave2.TOOLS:
+            response = client.post(f'/v1/wave2/{slug}', json=wave2.EXAMPLES[slug])
+            assert response.status_code == 200, (slug, response.text)
+            assert response.json()['tool'] == slug
+
+
 def test_all_five_decision_aids():
     policy = wave2.run('action_policy', {'action': {'tool':'mail.send','effect':'send'},
         'rules':[{'tool':'*','effect':'send','decision':'approval'}]})
@@ -52,9 +88,9 @@ def test_isolated_funnel_and_original_baseline(tmp_path, monkeypatch):
     app = create_app(db_path=str(tmp_path/'events.sqlite3'), secret='test-secret')
     with TestClient(app) as client:
         assert client.get('/health').json()['experiments'] == 10
-        assert client.get('/health').json()['wave2_prototypes'] == 5
+        assert client.get('/health').json()['wave2_prototypes'] == 22
         assert client.get('/v1/lab/catalog').json()['experiments'] == 10
-        assert len(client.get('/v1/wave2/catalog').json()['prototypes']) == 5
+        assert len(client.get('/v1/wave2/catalog').json()['prototypes']) == 22
         assert client.get('/wave2/action_policy').status_code == 200
         action = {'action': {'tool':'read_file','effect':'read'},
                   'rules':[{'tool':'read_file','effect':'read','decision':'allow'}]}

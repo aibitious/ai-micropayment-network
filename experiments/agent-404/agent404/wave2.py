@@ -224,6 +224,13 @@ HANDLERS = {'action_policy': action_policy, 'workflow_recovery': workflow_recove
             'webhook_triage': webhook_triage, 'claim_provenance': claim_provenance,
             'data_minimizer': data_minimizer}
 
+# Expand the same isolated second-wave cohort without changing original LAB handlers.
+from . import wave2_more
+TOOLS.update(wave2_more.TOOLS)
+LIMITATIONS.update(wave2_more.LIMITATIONS)
+EXAMPLES.update(wave2_more.EXAMPLES)
+HANDLERS.update(wave2_more.HANDLERS)
+
 
 def run(slug, payload):
     _require(slug in HANDLERS, 'Unknown wave-two prototype')

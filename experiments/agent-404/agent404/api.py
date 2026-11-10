@@ -48,7 +48,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         yield
 
     app = FastAPI(title='AIBITIOUS 404', version='0.3.0', lifespan=lifespan,
-                  description='10 original LAB tools and five isolated wave-two prototypes. No payments.')
+                  description='10 original LAB tools and an isolated second-wave prototype cohort. No payments.')
     app.state.resolver = engine
     app.state.store = store
 
@@ -87,7 +87,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         <style>body{background:#0d1420;color:#e4ecf4;font:17px system-ui;max-width:800px;margin:10vh auto;padding:2rem}h1{font-size:3rem}a{color:#91c6ff}code,pre{background:#1b2836;padding:1rem;display:block;overflow:auto;border-radius:8px}p{line-height:1.6}</style>
         <h1>404 LAB — Ten experiments for AI agents</h1><p>Free machine-readable tools for data quality, security signals, API preflight and official CVE evidence. No promises of guaranteed compliance or autonomous discovery.</p>
         <pre>POST v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
-        <p><a href="docs">OpenAPI docs</a> · <a href="tools/">10 tools</a> · <a href="wave2/">5 new prototypes</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
+        <p><a href="docs">OpenAPI docs</a> · <a href="tools/">10 tools</a> · <a href="wave2/">New prototypes</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
         <p>Free experimental access. No payments enabled. Do not submit secrets or personal information.</p></html>'''
 
     @app.get('/tools/', response_class=HTMLResponse, include_in_schema=False)
@@ -142,7 +142,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                         for slug, (name, desc) in wave2.TOOLS.items())
         return ('<!doctype html><html lang="en"><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                '<title>404 LAB — wave two</title><h1>Five agent-first prototypes</h1><ul>'
+                f'<title>404 LAB — wave two</title><h1>{len(wave2.TOOLS)} agent-first prototypes</h1><ul>'
                 + links + '</ul><p>Free, offline simulations. Do not send private or sensitive data.</p>'
                 '<p><a href="../tools/">Original 10 LAB tools</a> · '
                 '<a href="../v1/wave2/catalog">Agent catalog</a></p></html>')
@@ -174,7 +174,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 '"Could not record this signal."; }));</script>'
                 '<p>No contact details or payment are collected.</p>'
                 '<p><a href="../v1/wave2/catalog">Input catalog</a> · '
-                '<a href="./">All five prototypes</a></p></html>')
+                '<a href="./">All prototypes</a></p></html>')
 
     @app.get('/robots.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def robots():

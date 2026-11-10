@@ -4,6 +4,7 @@ Run via `uvicorn agent404.mcp_server:app --host 127.0.0.1 --port 8080`.
 The same FastAPI app serves REST and Streamable HTTP `/mcp/`.
 """
 import os
+import json
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -177,6 +178,21 @@ async def minimize_agent_data(fields: list[dict], allowed_fields: list[str],
     """Check declared fields, retention and model transfer against a supplied local policy."""
     return _mcp_wave2('data_minimizer', {'fields': fields, 'allowed_fields': allowed_fields,
                                         'max_retention_days': max_retention_days})
+
+
+def _register_wave2_payload_tool(slug: str) -> None:
+    # Keep the expanded catalogue discoverable without 17 nearly identical wrappers.
+    title, description = wave2.TOOLS[slug]
+    async def tool(payload: dict) -> dict:
+        return _mcp_wave2(slug, payload)
+    tool.__name__ = slug
+    example = json.dumps(wave2.EXAMPLES[slug], separators=(',', ':'))
+    tool.__doc__ = f'{description} Offline check. Supply payload like {example}. Advisory result only.'
+    mcp.tool(name=slug, title=title, description=tool.__doc__)(tool)
+
+
+for _slug in wave2.wave2_more.TOOLS:
+    _register_wave2_payload_tool(_slug)
 
 
 # One server-wide MCP quota rather than trusting an easily spoofed claim of client identity.

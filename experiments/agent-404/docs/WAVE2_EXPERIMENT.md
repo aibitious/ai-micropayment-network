@@ -1,80 +1,106 @@
-# AIBITIOUS 404 LAB — wave two, 10 November 2026
+# AIBITIOUS 404 LAB — broad wave two, 10 November 2026
 
-## Decision basis
+The owner chose breadth after the first five felt arbitrary. This cohort tests
+**22 distinct, bounded agent jobs** beside the original ten. Each must perform
+a deterministic offline transformation, return structured findings, have an
+example and a separate funnel. Scores below are prioritization judgments,
+not observed market demand or proof that a market is empty.
 
-This is an exploratory ranking, not proof that a market is empty. Scores are 1–5
-for specific unmet job, agent fit, potential paid value, safe zero-cost prototype,
-and differentiation. Maximum 25. Competitor examples are direct vendor or project
-sources checked 10 November 2026:
+Current first-party competitors: [LangSmith](https://www.langchain.com/langsmith/observability),
+[Braintrust](https://www.braintrust.dev/), [Arize Phoenix](https://arize.com/phoenix)
+and [Datadog](https://docs.datadoghq.com/llm_observability/guide/agent_monitoring/)
+cover broad agent tracing and evaluation. [Cedar](https://docs.cedarpolicy.com/auth/authorization.html)
+and [OPA](https://www.openpolicyagent.org/docs/policy-testing) cover production
+authorization; [Temporal](https://docs.temporal.io/design-patterns) covers
+durable retries and Sagas; [Svix](https://docs.svix.com/ai/dashboard-mcp)
+covers webhook diagnosis; [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector)
+scans agent skills. [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/)
+notes privacy risks in tool arguments and traces. The niche hypothesis is a
+small framework-neutral **pre-action check** with no integration bill.
 
-- [LangSmith](https://www.langchain.com/langsmith/observability) and
-  [Braintrust](https://www.braintrust.dev/) already cover broad agent tracing and evaluations.
-- [Arize Phoenix](https://arize.com/phoenix) offers open-source tracing and evals.
-- [Cedar](https://docs.cedarpolicy.com/auth/authorization.html) has mature allow/deny authorization semantics.
-- [Temporal](https://docs.temporal.io/design-patterns) supports durable retries and Saga compensation.
-- [Svix](https://docs.svix.com/ai/dashboard-mcp) exposes webhook diagnosis and replay through MCP.
-- [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) scans agent skills for security risks.
+## Forty ideas screened
 
-The opportunity hypothesis is a **small, framework-neutral, offline decision aid**
-that an agent can call before a risky next step. None of the selected tools claims
-to replace the production systems above.
+Scores 1–5: job urgency J, agent fit A, plausible paid value P, zero-cost safe
+testability Z, focused differentiation D. Total is out of 25. Competitor
+proximity and overlap with the existing ten reduce D. These are hypotheses.
 
-| Candidate | Need | Agent fit | Paid value | Safe build | Difference | Total | Decision |
+| Candidate | J | A | P | Z | D | Total | Decision |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Action Policy Simulator | 5 | 5 | 5 | 5 | 3 | 23 | Build |
 | Workflow Recovery Planner | 5 | 5 | 5 | 5 | 3 | 23 | Build |
 | Claim Provenance Check | 5 | 5 | 4 | 5 | 4 | 23 | Build |
 | Data Minimizer | 5 | 5 | 4 | 5 | 3 | 22 | Build |
 | Webhook Delivery Triage | 4 | 5 | 4 | 5 | 3 | 21 | Build |
-| Agent cost budget planner | 4 | 5 | 4 | 4 | 2 | 19 | Defer: overlaps monitoring |
-| Human approval handoff linter | 4 | 4 | 4 | 5 | 2 | 19 | Defer: overlaps policy simulator |
-| Incident timeline assembler | 4 | 4 | 4 | 4 | 2 | 18 | Defer: broad incident tools |
-| Agent skill risk scanner | 5 | 5 | 4 | 4 | 1 | 19 | Defer: existing strong scanner |
-| Agent trace anomaly detector | 4 | 5 | 4 | 2 | 1 | 16 | Defer: tracing stack and data costs |
-| Live website permission auditor | 4 | 4 | 3 | 1 | 2 | 14 | Defer: SSRF and outbound probing |
-| Multi-provider agent router | 4 | 5 | 4 | 1 | 1 | 15 | Defer: provider fees and mature gateways |
+| Permission Scope Delta | 5 | 5 | 5 | 5 | 3 | 23 | Build |
+| Approval Packet Check | 5 | 5 | 5 | 5 | 3 | 23 | Build |
+| Budget Envelope | 5 | 5 | 5 | 5 | 3 | 23 | Build |
+| Retry Schedule | 4 | 5 | 4 | 5 | 3 | 21 | Build |
+| Idempotency Audit | 5 | 5 | 4 | 5 | 3 | 22 | Build |
+| Prerequisite Gate | 5 | 5 | 4 | 5 | 3 | 22 | Build |
+| Evidence Freshness | 5 | 5 | 4 | 5 | 4 | 23 | Build |
+| Citation Matrix | 4 | 5 | 3 | 5 | 3 | 20 | Build |
+| Consumer Schema Impact | 5 | 5 | 4 | 5 | 3 | 22 | Build |
+| Boundary Case Builder | 4 | 5 | 3 | 5 | 3 | 20 | Build |
+| SLO Burn Check | 4 | 5 | 4 | 5 | 2 | 20 | Build |
+| Queue Capacity Forecast | 4 | 5 | 4 | 5 | 3 | 21 | Build |
+| Permission Path Explorer | 5 | 5 | 5 | 5 | 3 | 23 | Build |
+| Context Budget Packer | 4 | 5 | 4 | 5 | 3 | 21 | Build |
+| Release Gate Check | 5 | 5 | 4 | 5 | 3 | 22 | Build |
+| Manifest Drift | 4 | 5 | 4 | 5 | 3 | 21 | Build |
+| Receipt Chain Check | 4 | 5 | 4 | 5 | 3 | 21 | Build |
+| General agent trace platform | 5 | 5 | 5 | 1 | 1 | 17 | Defer: competitors, storage |
+| Agent skill malware scanner | 5 | 5 | 4 | 3 | 1 | 18 | Defer: existing scanner |
+| Live prompt-injection firewall | 5 | 5 | 5 | 1 | 1 | 17 | Defer: safety proof |
+| Live website permission auditor | 4 | 4 | 3 | 1 | 2 | 14 | Defer: outbound probe risk |
+| Multi-provider model router | 5 | 5 | 4 | 1 | 1 | 16 | Defer: fees, gateways |
+| Hosted webhook delivery service | 5 | 5 | 5 | 1 | 1 | 17 | Defer: Svix overlap |
+| Full workflow engine | 5 | 5 | 5 | 1 | 1 | 17 | Defer: Temporal overlap |
+| Production policy enforcement | 5 | 5 | 5 | 1 | 1 | 17 | Defer: authority risk |
+| Live secret scanner of customer repos | 5 | 5 | 4 | 1 | 1 | 16 | Defer: private data |
+| Autonomous incident fixer | 5 | 5 | 5 | 1 | 2 | 18 | Defer: external effects |
+| Automatic paid budget controller | 5 | 5 | 5 | 1 | 2 | 18 | Defer: no proven hard stop |
+| Identity verification for agents | 5 | 5 | 5 | 2 | 1 | 18 | Defer: credential handling |
+| Browser task recorder | 4 | 5 | 4 | 1 | 2 | 16 | Defer: sensitive traces |
+| Full tax invoice certification | 4 | 4 | 5 | 1 | 1 | 15 | Defer: legal correctness |
+| CVE exploitation predictor | 4 | 4 | 4 | 2 | 1 | 15 | Defer: weak evidence |
+| Agent marketplace crawler | 3 | 5 | 3 | 2 | 2 | 15 | Defer: crawl cost |
+| Customer data lineage platform | 5 | 5 | 5 | 1 | 1 | 17 | Defer: integration cost |
+| Autonomous payment reconciliation | 5 | 5 | 5 | 1 | 1 | 17 | Defer: financial effects |
 
-Scores are judgments for prioritizing this test, not market measurements. The
-research does not establish that customers will pay or that the five jobs are
-unserved. In particular, Cedar, Temporal and Svix solve parts of these jobs.
+## Interfaces and isolation
 
-## Isolation and interfaces
+The 22 implementations live in `agent404/wave2.py` and `wave2_more.py`.
+They process bounded JSON in memory, make no outbound call, execute no supplied
+code and persist no payload. REST uses `POST /v1/wave2/{slug}`. MCP exposes
+22 wave-two tools, five with explicit parameters and 17 with a `payload`
+object and an example in their tool description. `/v1/wave2/catalog` provides
+all examples and limitations; `/wave2/` provides pages. The original ten LAB
+tools and CVE resolver remain in their existing endpoints and tables. Health
+keeps `experiments: 10` and separately reports `wave2_prototypes: 22`.
 
-The five new implementations live in `agent404/wave2.py`. They accept bounded
-JSON, use no network or LLM, run no caller command and persist no payload.
-REST endpoints are `POST /v1/wave2/{slug}`. The same five tools appear in the
-existing MCP server. `GET /v1/wave2/catalog` provides examples; `/wave2/`
-provides pages. The original `/v1/lab/*`, ten-tool directory and CVE resolver
-are left intact. `GET /health` retains `experiments: 10` and reports
-`wave2_prototypes: 5` separately.
+## Measurement and decision rule
 
-## Pre-registered funnel
+The isolated `wave2_events` table records discovery (directory, detail,
+catalog), launch (REST/MCP and outcome), return (estimated REST network IDs
+launching on two distinct UTC days), and voluntary `pricing` or `pilot`
+signals. Admin-only `/v1/wave2/metrics` separates marked internal tests.
+No raw inputs, contact information, budgets or payment details are stored.
+REST HMAC network IDs are not people; anonymous MCP cannot count distinct
+agents. Directory traffic may be crawlers and self-reported interest is not
+a sale. Unlabeled tests may contaminate counts. Do not combine the wave-two
+cohort with the original 30-day series.
 
-The new `wave2_events` SQLite table is isolated from `lab_events` and the CVE
-baseline. Per prototype, record:
-
-1. `discovery`: directory, detail page or machine catalog exposure;
-2. `launch`: REST or MCP execution and outcome (`ok`, `issues`, invalid, limited, error);
-3. `return`: estimated REST network IDs launching on two distinct UTC days;
-4. `paid_demand_signal`: voluntary `pricing` or `pilot` POST to
-   `/v1/wave2/{slug}/interest`.
-
-`GET /v1/wave2/metrics` is admin-only. It returns aggregate counts, distinct
-estimated REST network IDs and marked internal tests separately. Public pages
-and catalog calls can be crawlers, so exposure is not a user. Anonymous MCP
-shares an identity, so MCP agent counts and return rates are unavailable.
-Interest is unverified self-report; it is not a sale, payment authorization or
-validated willingness to pay. No email, contact, budget, private document or
-raw request body is saved. An authenticated internal-test header excludes
-labeled REST/page probes; unlabeled tests and malicious submissions may still
-contaminate counts. Prefer repeated external use plus an independent user
-conversation before product promotion. Compare both waves over their own
-launch windows; never merge wave-two counts into the original 30-day cohort.
+After at least 30 full days, first check uptime and test exclusion. Promote
+no more than three tools for deeper research only if each has at least five
+estimated non-internal REST network IDs, three returning IDs on different
+days, completion above 90%, and at least one independently corroborated
+problem interview. Low data means inconclusive. These thresholds are
+guardrails, not proof of willingness to pay.
 
 ## Release boundary
 
-The code requires targeted regression tests, a branch PR and the repository's
-reviewed, typed Git-to-VPS operation at an exact merged SHA before a public
-deployment. A healthy local test or PR does not establish production state.
-Keep payments and paid providers disabled. Do not change unrelated routes,
-domains, Caddy configuration or EOStorm.
+This code needs tests, review and an existing typed Git-to-VPS operation at
+an exact merged SHA. The current canonical `docs/AUTOPILOT_BRIDGE_V026.md`
+contains no Agent404 deploy/inspect/rollback selector. A local pass or draft
+PR does not establish production. Keep billing off; do not touch EOStorm,
+unrelated routes, Caddy or the original LAB data.
