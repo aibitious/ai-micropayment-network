@@ -4,18 +4,23 @@ Run via `uvicorn agent404.mcp_server:app --host 127.0.0.1 --port 8080`.
 The same FastAPI app serves REST and Streamable HTTP `/mcp/`.
 """
 import os
+import json
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from mcp.server import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import ToolAnnotations
 from .api import create_app
 from .core import Limited, UpstreamFailed
 from .lab import LabInputError, run_lab
+from . import wave2
 
 mcp = MCPServer('AIBITIOUS 404 LAB - Ten Agent Experiments')
 rest = create_app()
+offline_readonly = ToolAnnotations(read_only_hint=True, destructive_hint=False,
+                                   idempotent_hint=False, open_world_hint=False)
 
 
 @mcp.tool()
@@ -125,6 +130,72 @@ async def robots_policy_check(robots_txt: str, agent: str = '*', path: str = '/'
 async def json_shape_diff(before: dict, after: dict) -> dict:
     """Compare JSON object shapes for added, deleted or changed field types. Offline."""
     return _mcp_lab('schema_diff', {'before': before, 'after': after})
+
+
+def _mcp_wave2(slug: str, payload: dict) -> dict:
+    engine = rest.state.resolver
+    identity = engine.identity('mcp-public')
+    outcome = 'error'
+    try:
+        engine.gate(identity, 'wave2:' + slug)
+        result = wave2.run(slug, payload)
+        outcome = result['status']
+        return result
+    except Limited:
+        outcome = 'rate_limited'
+        return {'status': 'rate_limited', 'tool': slug}
+    except LabInputError as exc:
+        outcome = 'invalid_input'
+        return {'status': 'invalid_input', 'tool': slug, 'message': str(exc)}
+    finally:
+        rest.state.store.wave2_event(slug, identity, 'launch', outcome, 'mcp')
+
+
+@mcp.tool(annotations=offline_readonly)
+async def simulate_agent_action_policy(action: dict, rules: list[dict]) -> dict:
+    """Dry-run one proposed tool action against explicit allow/deny/approval rules; no enforcement."""
+    return _mcp_wave2('action_policy', {'action': action, 'rules': rules})
+
+
+@mcp.tool(annotations=offline_readonly)
+async def plan_workflow_recovery(steps: list[dict]) -> dict:
+    """Plan reverse-order compensations for a supplied workflow DAG; never execute actions."""
+    return _mcp_wave2('workflow_recovery', {'steps': steps})
+
+
+@mcp.tool(annotations=offline_readonly)
+async def triage_webhook_deliveries(attempts: list[dict]) -> dict:
+    """Find duplicate, failed and rate-limited deliveries from supplied HTTP status metadata."""
+    return _mcp_wave2('webhook_triage', {'attempts': attempts})
+
+
+@mcp.tool(annotations=offline_readonly)
+async def check_claim_provenance(claims: list[dict], sources: list[dict]) -> dict:
+    """Check whether supplied claim references reach at least one declared source; not fact checking."""
+    return _mcp_wave2('claim_provenance', {'claims': claims, 'sources': sources})
+
+
+@mcp.tool(annotations=offline_readonly)
+async def minimize_agent_data(fields: list[dict], allowed_fields: list[str],
+                              max_retention_days: int) -> dict:
+    """Check declared fields, retention and model transfer against a supplied local policy."""
+    return _mcp_wave2('data_minimizer', {'fields': fields, 'allowed_fields': allowed_fields,
+                                        'max_retention_days': max_retention_days})
+
+
+def _register_wave2_payload_tool(slug: str) -> None:
+    # Keep the expanded catalogue discoverable without 17 nearly identical wrappers.
+    title, description = wave2.TOOLS[slug]
+    async def tool(payload: dict) -> dict:
+        return _mcp_wave2(slug, payload)
+    tool.__name__ = slug
+    example = json.dumps(wave2.EXAMPLES[slug], separators=(',', ':'))
+    tool.__doc__ = f'{description} Offline check. Supply payload like {example}. Advisory result only.'
+    mcp.tool(name=slug, title=title, description=tool.__doc__, annotations=offline_readonly)(tool)
+
+
+for _slug in wave2.wave2_more.TOOLS:
+    _register_wave2_payload_tool(_slug)
 
 
 # One server-wide MCP quota rather than trusting an easily spoofed claim of client identity.

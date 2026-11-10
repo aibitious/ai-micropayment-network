@@ -44,6 +44,13 @@ class Store:
                     latency_ms INTEGER NOT NULL DEFAULT 0
                 );
                 CREATE INDEX IF NOT EXISTS lab_events_tool_at ON lab_events(tool,at);
+                CREATE TABLE IF NOT EXISTS wave2_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    at INTEGER NOT NULL, tool TEXT NOT NULL, identity TEXT NOT NULL,
+                    stage TEXT NOT NULL, outcome TEXT NOT NULL,
+                    channel TEXT NOT NULL, internal INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS wave2_events_tool_at ON wave2_events(tool,at);
             ''')
 
     @contextmanager
@@ -146,11 +153,50 @@ class Store:
                     'cve_baseline':dict(cve),
                     'note':'REST unique clients are HMAC network-ID estimates; MCP uses a shared anonymous bucket, so unique MCP agents are unknown. Crawlers are not automatically excluded. No raw payloads are retained.'}
 
+    def wave2_event(self, tool: str, identity: str, stage: str, outcome: str,
+                    channel: str, internal: bool = False):
+        with self.connection() as db:
+            db.execute('''INSERT INTO wave2_events(at,tool,identity,stage,outcome,channel,internal)
+                          VALUES(?,?,?,?,?,?,?)''',
+                       (int(time.time()),tool,identity,stage,outcome,channel,int(internal)))
+
+    def wave2_metrics(self, since: int | None = None):
+        after = int(since or (time.time()-30*86400))
+        with self.connection() as db:
+            rows = db.execute('''SELECT tool,stage,outcome,channel,COUNT(*) AS events,
+                         COUNT(DISTINCT CASE WHEN channel!='mcp' THEN identity END) AS estimated_network_ids
+                         FROM wave2_events WHERE at>=? AND internal=0
+                         GROUP BY tool,stage,outcome,channel ORDER BY tool,stage,outcome,channel''',(after,)).fetchall()
+            returns = db.execute('''SELECT tool,COUNT(*) AS estimated_returning_network_ids FROM
+                         (SELECT tool,identity,COUNT(DISTINCT DATE(at,'unixepoch')) AS days
+                          FROM wave2_events WHERE at>=? AND internal=0 AND channel='rest'
+                            AND stage='launch' AND outcome IN ('ok','issues')
+                          GROUP BY tool,identity) WHERE days>=2 GROUP BY tool''',(after,)).fetchall()
+            interest_after_launch = db.execute('''SELECT i.tool,
+                         COUNT(DISTINCT i.identity) AS estimated_network_ids
+                         FROM wave2_events AS i
+                         WHERE i.at>=? AND i.internal=0 AND i.channel='rest'
+                           AND i.stage='paid_demand_signal'
+                           AND EXISTS (SELECT 1 FROM wave2_events AS l
+                                       WHERE l.tool=i.tool AND l.identity=i.identity
+                                         AND l.at>=? AND l.at<=i.at AND l.internal=0
+                                         AND l.channel='rest' AND l.stage='launch'
+                                         AND l.outcome IN ('ok','issues'))
+                         GROUP BY i.tool''',(after,after)).fetchall()
+            tests = db.execute('''SELECT tool,stage,COUNT(*) AS events FROM wave2_events
+                                  WHERE at>=? AND internal=1 GROUP BY tool,stage''',(after,)).fetchall()
+            return {'window_start_unix':after, 'funnel_events':[dict(r) for r in rows],
+                    'estimated_rest_returning_network_ids':{r['tool']:r['estimated_returning_network_ids'] for r in returns},
+                    'estimated_rest_interest_after_launch_network_ids':{r['tool']:r['estimated_network_ids'] for r in interest_after_launch},
+                    'internal_test_events':[dict(r) for r in tests],
+                    'note':'HMAC network IDs are not people. MCP uses one shared identity and cannot yield unique agents or return rate. Returns require successful launches on distinct UTC days. Discovery counts are exposures, not users. Interest is self-reported, and linked interest is not payment intent verification.'}
+
     def prune(self):
         now = int(time.time())
         with self.connection() as db:
             db.execute('DELETE FROM events WHERE at<?', (now-30*86400,))
             db.execute('DELETE FROM lab_events WHERE at<?', (now-30*86400,))
+            db.execute('DELETE FROM wave2_events WHERE at<?', (now-30*86400,))
             db.execute('DELETE FROM results WHERE expires_at<?', (now-7*86400,))
             db.execute('DELETE FROM gaps WHERE last_seen<?', (now-90*86400,))
             db.execute("DELETE FROM counters WHERE bucket LIKE 'day:%' AND bucket<?", (f'day:{time.strftime("%Y%m%d",time.gmtime(now-3*86400))}',))
