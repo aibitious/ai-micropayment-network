@@ -9,13 +9,18 @@ on:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
     - uses: actions/checkout@v4
 
     - name: Run Slither
+      id: slither
       uses: crytic/slither-action@v0.3.1
       with:
         target: 'contracts/'
+        sarif: results.sarif
         slither-args: '--exclude-dependencies --filter-paths "node_modules"'
         fail-on: none # Warn only for now, since it's an alpha project
       
