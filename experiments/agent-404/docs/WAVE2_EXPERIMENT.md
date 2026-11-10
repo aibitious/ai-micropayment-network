@@ -1,5 +1,6 @@
 # AIBITIOUS 404 LAB — broad wave two, 10 November 2026
 
+The original ten-tool baseline was merged to product `main` on 11 November 2026.
 The owner chose breadth after the first five felt arbitrary. This cohort tests
 **22 distinct, bounded agent jobs** beside the original ten. Each must perform
 a deterministic offline transformation, return structured findings, have an
