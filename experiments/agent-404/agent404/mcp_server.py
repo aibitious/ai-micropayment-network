@@ -13,6 +13,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from .api import create_app
 from .core import Limited, UpstreamFailed
 from .lab import LabInputError, run_lab
+from . import wave2
 
 mcp = MCPServer('AIBITIOUS 404 LAB - Ten Agent Experiments')
 rest = create_app()
@@ -125,6 +126,57 @@ async def robots_policy_check(robots_txt: str, agent: str = '*', path: str = '/'
 async def json_shape_diff(before: dict, after: dict) -> dict:
     """Compare JSON object shapes for added, deleted or changed field types. Offline."""
     return _mcp_lab('schema_diff', {'before': before, 'after': after})
+
+
+def _mcp_wave2(slug: str, payload: dict) -> dict:
+    engine = rest.state.resolver
+    identity = engine.identity('mcp-public')
+    outcome = 'error'
+    try:
+        engine.gate(identity, 'wave2:' + slug)
+        result = wave2.run(slug, payload)
+        outcome = result['status']
+        return result
+    except Limited:
+        outcome = 'rate_limited'
+        return {'status': 'rate_limited', 'tool': slug}
+    except LabInputError as exc:
+        outcome = 'invalid_input'
+        return {'status': 'invalid_input', 'tool': slug, 'message': str(exc)}
+    finally:
+        rest.state.store.wave2_event(slug, identity, 'launch', outcome, 'mcp')
+
+
+@mcp.tool()
+async def simulate_agent_action_policy(action: dict, rules: list[dict]) -> dict:
+    """Dry-run one proposed tool action against explicit allow/deny/approval rules; no enforcement."""
+    return _mcp_wave2('action_policy', {'action': action, 'rules': rules})
+
+
+@mcp.tool()
+async def plan_workflow_recovery(steps: list[dict]) -> dict:
+    """Plan reverse-order compensations for a supplied workflow DAG; never execute actions."""
+    return _mcp_wave2('workflow_recovery', {'steps': steps})
+
+
+@mcp.tool()
+async def triage_webhook_deliveries(attempts: list[dict]) -> dict:
+    """Find duplicate, failed and rate-limited deliveries from supplied HTTP status metadata."""
+    return _mcp_wave2('webhook_triage', {'attempts': attempts})
+
+
+@mcp.tool()
+async def check_claim_provenance(claims: list[dict], sources: list[dict]) -> dict:
+    """Check whether supplied claim references reach at least one declared source; not fact checking."""
+    return _mcp_wave2('claim_provenance', {'claims': claims, 'sources': sources})
+
+
+@mcp.tool()
+async def minimize_agent_data(fields: list[dict], allowed_fields: list[str],
+                              max_retention_days: int) -> dict:
+    """Check declared fields, retention and model transfer against a supplied local policy."""
+    return _mcp_wave2('data_minimizer', {'fields': fields, 'allowed_fields': allowed_fields,
+                                        'max_retention_days': max_retention_days})
 
 
 # One server-wide MCP quota rather than trusting an easily spoofed claim of client identity.

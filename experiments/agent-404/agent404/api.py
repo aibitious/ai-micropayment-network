@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 from .core import Resolver, Store, Limited, UpstreamFailed
 from .lab import LabInputError, TOOLS, LIMITATIONS, describe_tools, run_lab
+from . import wave2
 
 
 class ResolveInput(BaseModel):
@@ -23,6 +24,10 @@ class ResolveInput(BaseModel):
 class GapInput(BaseModel):
     topic: str = Field(min_length=8, max_length=200)
     consent_to_aggregate: bool = False
+
+
+class InterestInput(BaseModel):
+    signal: str
 
 
 def create_app(*, db_path: str | None = None, secret: str | None = None,
@@ -42,8 +47,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         store.prune()
         yield
 
-    app = FastAPI(title='AIBITIOUS 404', version='0.2.0', lifespan=lifespan,
-                  description='10 free agent tools: CVE evidence and nine bounded deterministic checks. No payments.')
+    app = FastAPI(title='AIBITIOUS 404', version='0.3.0', lifespan=lifespan,
+                  description='10 original LAB tools and five isolated wave-two prototypes. No payments.')
     app.state.resolver = engine
     app.state.store = store
 
@@ -82,7 +87,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         <style>body{background:#0d1420;color:#e4ecf4;font:17px system-ui;max-width:800px;margin:10vh auto;padding:2rem}h1{font-size:3rem}a{color:#91c6ff}code,pre{background:#1b2836;padding:1rem;display:block;overflow:auto;border-radius:8px}p{line-height:1.6}</style>
         <h1>404 LAB — Ten experiments for AI agents</h1><p>Free machine-readable tools for data quality, security signals, API preflight and official CVE evidence. No promises of guaranteed compliance or autonomous discovery.</p>
         <pre>POST v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
-        <p><a href="docs">OpenAPI docs</a> · <a href="tools/">10 tools</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
+        <p><a href="docs">OpenAPI docs</a> · <a href="tools/">10 tools</a> · <a href="wave2/">5 new prototypes</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
         <p>Free experimental access. No payments enabled. Do not submit secrets or personal information.</p></html>'''
 
     @app.get('/tools/', response_class=HTMLResponse, include_in_schema=False)
@@ -127,6 +132,50 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 '<a href="../docs">API schema</a> · <a href="./">All tools</a></p>'
                 '<p>Process only synthetic or non-sensitive data. No payments accepted.</p></html>')
 
+    @app.get('/wave2/', response_class=HTMLResponse, include_in_schema=False)
+    async def wave2_directory(request: Request):
+        identity = client_identity(request)
+        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
+        for slug in wave2.TOOLS:
+            store.wave2_event(slug, identity, 'discovery', 'directory', 'page', internal)
+        links = ''.join(f'<li><a href="{slug}">{name}</a> — {desc}</li>'
+                        for slug, (name, desc) in wave2.TOOLS.items())
+        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                '<title>404 LAB — wave two</title><h1>Five agent-first prototypes</h1><ul>'
+                + links + '</ul><p>Free, offline simulations. Do not send private or sensitive data.</p>'
+                '<p><a href="../tools/">Original 10 LAB tools</a> · '
+                '<a href="../v1/wave2/catalog">Agent catalog</a></p></html>')
+
+    @app.get('/wave2/{slug}', response_class=HTMLResponse, include_in_schema=False)
+    async def wave2_page(slug: str, request: Request):
+        if slug not in wave2.TOOLS: raise HTTPException(404, 'Unknown prototype')
+        identity = client_identity(request)
+        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
+        store.wave2_event(slug, identity, 'discovery', 'detail', 'page', internal)
+        from html import escape
+        name, desc = wave2.TOOLS[slug]
+        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{escape(name)} — 404 LAB</title><h1>{escape(name)}</h1>'
+                f'<p>{escape(desc)}</p><p>POST /404/v1/wave2/{slug} · MCP /404/mcp/</p>'
+                f'<p>{escape(wave2.LIMITATIONS[slug])}</p>'
+                '<p>Would you consider a paid version?</p>'
+                '<button type="button" data-signal="pricing">Show me pricing later</button> '
+                '<button type="button" data-signal="pilot">I would test a paid pilot</button>'
+                '<p id="signal-result" role="status"></p>'
+                '<script>document.querySelectorAll("[data-signal]").forEach(button => '
+                'button.addEventListener("click", async () => {'
+                f'const response = await fetch("../v1/wave2/{slug}/interest", {{'
+                'method:"POST", headers:{"Content-Type":"application/json"},'
+                'body:JSON.stringify({signal:button.dataset.signal})});'
+                'document.getElementById("signal-result").textContent = response.ok ? '
+                '"Thanks. This is an anonymous interest signal, not a purchase." : '
+                '"Could not record this signal."; }));</script>'
+                '<p>No contact details or payment are collected.</p>'
+                '<p><a href="../v1/wave2/catalog">Input catalog</a> · '
+                '<a href="./">All five prototypes</a></p></html>')
+
     @app.get('/robots.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def robots():
         return ('User-agent: *\nAllow: /\nDisallow: /v1/metrics\n'
@@ -154,6 +203,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                "<url><loc>https://aibitious.com/404/v1/lab/catalog</loc></url>"
                "<url><loc>https://aibitious.com/404/tools/</loc></url>" +
                ''.join(f"<url><loc>https://aibitious.com/404/tools/{slug}</loc></url>" for slug in TOOLS)
+               + "<url><loc>https://aibitious.com/404/wave2/</loc></url>"
+               + ''.join(f"<url><loc>https://aibitious.com/404/wave2/{slug}</loc></url>" for slug in wave2.TOOLS)
                + "</urlset>")
         return Response(content=xml, media_type='application/xml')
 
@@ -169,7 +220,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.get('/health')
     async def health():
-        return {'status': 'ok', 'service': 'aibitious-404', 'version': '0.2.0', 'experiments': 10}
+        return {'status': 'ok', 'service': 'aibitious-404', 'version': '0.3.0',
+                'experiments': 10, 'wave2_prototypes': len(wave2.TOOLS)}
 
     @app.get('/v1/catalog')
     async def catalog():
@@ -215,6 +267,54 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 'experiments': 10, 'baseline': {'slug': 'cve_verify', 'endpoint': '/v1/resolve'},
                 'tools': describe_tools(), 'billing': 'disabled',
                 'privacy': 'Inputs processed in memory; no raw input stored in LAB telemetry. Use synthetic/public data only.'}
+
+    @app.get('/v1/wave2/catalog')
+    async def wave2_catalog(request: Request):
+        identity = client_identity(request)
+        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
+        for slug in wave2.TOOLS:
+            store.wave2_event(slug, identity, 'discovery', 'catalog', 'rest', internal)
+        return {'name': 'AIBITIOUS 404 LAB wave two', 'version': '0.1.0',
+                'prototypes': wave2.describe_tools(), 'billing': 'disabled',
+                'privacy': 'No raw inputs are stored; use synthetic or public data only.'}
+
+    @app.get('/v1/wave2/metrics', include_in_schema=False)
+    async def wave2_metrics(authorization: str = Header(default='')):
+        if not admin: raise HTTPException(503, 'admin metrics not configured')
+        if not secrets.compare_digest(authorization, 'Bearer '+admin): raise HTTPException(403, 'forbidden')
+        return store.wave2_metrics()
+
+    @app.post('/v1/wave2/{slug}/interest')
+    async def wave2_interest(slug: str, data: InterestInput, request: Request):
+        if slug not in wave2.TOOLS: raise HTTPException(404, 'Unknown prototype')
+        if data.signal not in ('pricing', 'pilot'): raise HTTPException(422, 'Invalid interest signal')
+        identity = client_identity(request)
+        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
+        try: engine.gate(identity, 'wave2:interest:'+slug)
+        except Limited as exc: raise HTTPException(429, str(exc), headers={'Retry-After':'60'})
+        store.wave2_event(slug, identity, 'paid_demand_signal', data.signal, 'rest', internal)
+        return {'status':'recorded', 'signal':data.signal,
+                'note':'Self-reported interest only; no price, contact or payment is collected.'}
+
+    @app.post('/v1/wave2/{slug}')
+    async def wave2_call(slug: str, payload: dict[str, Any], request: Request):
+        if slug not in wave2.TOOLS: raise HTTPException(404, 'Unknown prototype')
+        identity = client_identity(request)
+        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
+        outcome = 'error'
+        try:
+            engine.gate(identity, 'wave2:'+slug)
+            result = wave2.run(slug, payload)
+            outcome = result['status']
+            return result
+        except Limited as exc:
+            outcome = 'rate_limited'
+            raise HTTPException(429, str(exc), headers={'Retry-After':'60'})
+        except LabInputError as exc:
+            outcome = 'invalid_input'
+            raise HTTPException(422, str(exc))
+        finally:
+            store.wave2_event(slug, identity, 'launch', outcome, 'rest', internal)
 
     @app.post('/v1/lab/{slug}')
     async def lab_call(slug: str, payload: dict[str, Any], request: Request):
