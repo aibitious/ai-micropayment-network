@@ -1,5 +1,31 @@
 # AIBITIOUS 404 — agent-first missing-information experiment
 
+## The 10-tool portfolio (2026-11)
+
+**Status:** code and test coverage are available in this branch; independently validate the public deployment before marking any tool live.
+
+The original CVE Verify is the baseline. Nine additional bounded and offline experiments share the public REST/MCP interface and each has separate telemetry:
+
+| Tool slug | Core use |
+| --- | --- |
+| cve_verify | Official NIST NVD CVE record (existing \`POST /v1/resolve\`) |
+| json_guard | Safe-subset JSON Schema validation |
+| csv_doctor | CSV missing/duplicate data inspection |
+| invoice_audit | Invoice arithmetic consistency |
+| secret_shield | Possible secret/token pattern detection |
+| openapi_preflight | OpenAPI document structure lint |
+| mcp_preflight | MCP server.json metadata check |
+| header_audit | Supplied HTTP security header review |
+| robots_check | Supplied robots.txt parsing (not legal permission) |
+| schema_diff | JSON object shape drift detection |
+
+Agent integration: \`GET /v1/lab/catalog\`, \`POST /v1/lab/{slug}\`, \`GET /tools/\`, existing remote MCP \`/mcp/\`. Each LAB payload is at most 20 KB. The nine new tools never fetch attacker-provided URLs or execute code; all assessments are advisory, not safety/compliance certificates. Data used for tests should be synthetic or public.
+
+Private analytics: \`GET /v1/lab/metrics\` requires the existing admin bearer token. It separates HTTP page views, REST tool calls and MCP tool calls, provides per-tool outcome counts, average latency and estimated repeat REST network IDs. It does not assert that hashed IP identities are unique agents. Raw tool inputs are not stored.
+
+Experiment protocol and selection rules: [10-tool portfolio](docs/PORTFOLIO_10_EXPERIMENT.md).
+
+
 **Status: LIVE free API experiment at https://aibitious.com/404/; no payments enabled. MCP Registry publishing is configured through GitHub Actions OIDC; verify public listing separately.**
 
 Goal: test whether independently operated AI agents discover and reuse a small, evidence-backed information API. The *first vertical* is deliberately narrow: resolving exact CVE IDs against the official NIST National Vulnerability Database (NVD). The project's long-term idea is to detect recurring missing-information needs, but this repository does **not** claim to verify arbitrary facts.
