@@ -127,4 +127,12 @@ def test_return_is_distinct_day_launch_only(tmp_path):
         db.execute("UPDATE wave2_events SET at=at-86400 WHERE stage='launch'")
     store.wave2_event('action_policy','network1','launch','issues','rest')
     store.wave2_event('action_policy','mcp-shared','launch','ok','mcp')
-    assert store.wave2_metrics()['estimated_rest_returning_network_ids']['action_policy'] == 1
+    store.wave2_event('action_policy','network2','launch','invalid_input','rest')
+    with store.connection() as db:
+        db.execute("UPDATE wave2_events SET at=at-86400 WHERE identity='network2'")
+    store.wave2_event('action_policy','network2','launch','rate_limited','rest')
+    store.wave2_event('action_policy','network2','paid_demand_signal','pricing','rest')
+    store.wave2_event('action_policy','network1','paid_demand_signal','pilot','rest')
+    metrics = store.wave2_metrics()
+    assert metrics['estimated_rest_returning_network_ids']['action_policy'] == 1
+    assert metrics['estimated_rest_interest_after_launch_network_ids']['action_policy'] == 1

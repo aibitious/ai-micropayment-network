@@ -90,6 +90,9 @@ The isolated `wave2_events` table records discovery (directory, detail,
 catalog), launch (REST/MCP and outcome), return (estimated REST network IDs
 launching on two distinct UTC days), and voluntary `pricing` or `pilot`
 signals. Admin-only `/v1/wave2/metrics` separates marked internal tests.
+The return estimate requires successful REST launches on two UTC days;
+invalid inputs and rate limits do not qualify. A separate interest estimate
+counts only REST network IDs with a successful launch before their signal.
 No raw inputs, contact information, budgets or payment details are stored.
 REST HMAC network IDs are not people; anonymous MCP cannot count distinct
 agents. Directory traffic may be crawlers and self-reported interest is not
