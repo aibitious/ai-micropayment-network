@@ -105,9 +105,12 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 'Do not submit sensitive or private real-world data.</p></html>')
 
     @app.get('/tools/{slug}', response_class=HTMLResponse, include_in_schema=False)
-    async def tool_page(slug: str):
+    async def tool_page(slug: str, request: Request):
         if slug not in TOOLS:
             raise HTTPException(404, 'Unknown LAB tool')
+        identity = client_identity(request)
+        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
+        store.lab_event(slug, identity, 'page', 'view', 0, internal)
         title, desc = TOOLS[slug]
         from html import escape
         title = escape(title)
