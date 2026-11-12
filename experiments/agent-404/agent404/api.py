@@ -153,49 +153,32 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         store.lab_event(slug, identity, 'page', 'view', 0, internal)
         return web_ui.tool_detail(slug)
 
+    @app.head('/wave2/', include_in_schema=False)
+    async def wave2_directory_head():
+        return Response(status_code=200)
+
+    @app.head('/wave2/{slug}', include_in_schema=False)
+    async def wave2_tool_head(slug: str):
+        if slug not in wave2.TOOLS:
+            raise HTTPException(404, 'Unknown prototype')
+        return Response(status_code=200)
+
     @app.get('/wave2/', response_class=HTMLResponse, include_in_schema=False)
     async def wave2_directory(request: Request):
         identity = client_identity(request)
         internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
         for slug in wave2.TOOLS:
             store.wave2_event(slug, identity, 'discovery', 'directory', 'page', internal)
-        links = ''.join(f'<li><a href="{slug}">{name}</a> — {desc}</li>'
-                        for slug, (name, desc) in wave2.TOOLS.items())
-        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                f'<title>404 LAB — wave two</title><h1>{len(wave2.TOOLS)} agent-first prototypes</h1><ul>'
-                + links + '</ul><p>Free, offline simulations. Do not send private or sensitive data.</p>'
-                '<p><a href="../tools/">Original 10 LAB tools</a> · '
-                '<a href="../v1/wave2/catalog">Agent catalog</a></p></html>')
+        return web_ui.wave2_directory()
 
     @app.get('/wave2/{slug}', response_class=HTMLResponse, include_in_schema=False)
     async def wave2_page(slug: str, request: Request):
-        if slug not in wave2.TOOLS: raise HTTPException(404, 'Unknown prototype')
+        if slug not in wave2.TOOLS:
+            raise HTTPException(404, 'Unknown prototype')
         identity = client_identity(request)
         internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
         store.wave2_event(slug, identity, 'discovery', 'detail', 'page', internal)
-        from html import escape
-        name, desc = wave2.TOOLS[slug]
-        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                f'<title>{escape(name)} — 404 LAB</title><h1>{escape(name)}</h1>'
-                f'<p>{escape(desc)}</p><p>POST /404/v1/wave2/{slug} · MCP /404/mcp/</p>'
-                f'<p>{escape(wave2.LIMITATIONS[slug])}</p>'
-                '<p>Would you consider a paid version?</p>'
-                '<button type="button" data-signal="pricing">Show me pricing later</button> '
-                '<button type="button" data-signal="pilot">I would test a paid pilot</button>'
-                '<p id="signal-result" role="status"></p>'
-                '<script>document.querySelectorAll("[data-signal]").forEach(button => '
-                'button.addEventListener("click", async () => {'
-                f'const response = await fetch("../v1/wave2/{slug}/interest", {{'
-                'method:"POST", headers:{"Content-Type":"application/json"},'
-                'body:JSON.stringify({signal:button.dataset.signal})});'
-                'document.getElementById("signal-result").textContent = response.ok ? '
-                '"Thanks. This is an anonymous interest signal, not a purchase." : '
-                '"Could not record this signal."; }));</script>'
-                '<p>No contact details or payment are collected.</p>'
-                '<p><a href="../v1/wave2/catalog">Input catalog</a> · '
-                '<a href="./">All prototypes</a></p></html>')
+        return web_ui.wave2_detail(slug)
 
     @app.get('/robots.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def robots():
@@ -232,7 +215,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
     @app.get('/.well-known/agent.json', include_in_schema=False)
     async def agent_metadata():
         # Descriptive public metadata, NOT a claim of official MCP Registry enrollment.
-        return {'name': 'AIBITIOUS 404', 'description': '10 free agent tools: official CVE evidence and nine deterministic checks',
+        return {'name': 'AIBITIOUS 404', 'description': '32 free agent experiments: 10 original validators/CVE evidence and 22 offline decision simulations',
                 'mcp': 'https://aibitious.com/404/mcp/',
                 'openapi': 'https://aibitious.com/404/openapi.json',
                 'registry_status': 'registered' if os.environ.get('MCP_REGISTRY_STATUS') == 'registered' else 'not_registered',
@@ -251,6 +234,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
             'description': '10 free agent-facing experiments; CVE verification plus nine bounded deterministic offline tools',
             'openapi': '/openapi.json', 'resolve': '/v1/resolve', 'report_gap': '/v1/gaps',
             'lab_catalog': '/v1/lab/catalog', 'lab_tools': describe_tools(),
+            'wave2_catalog': '/v1/wave2/catalog', 'wave2_prototypes': len(wave2.TOOLS),
             'limitations': ['Only CVE lookup fetches official NVD data', 'offline tools do not certify security, tax compliance or source correctness', 'no payment support'],
             'price': {'amount': 0, 'currency': 'USD', 'note': 'free experiment'},
             'mcp': {'endpoint': '/mcp/', 'note': 'present only when official SDK v2 is installed and enabled'},
@@ -313,7 +297,9 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
         try: engine.gate(identity, 'wave2:interest:'+slug)
         except Limited as exc: raise HTTPException(429, str(exc), headers={'Retry-After':'60'})
-        store.wave2_event(slug, identity, 'paid_demand_signal', data.signal, 'rest', internal)
+        channel = ('rest_playground' if request.headers.get(
+            'x-404-client-surface', '').lower() == 'web-playground' else 'rest')
+        store.wave2_event(slug, identity, 'paid_demand_signal', data.signal, channel, internal)
         return {'status':'recorded', 'signal':data.signal,
                 'note':'Self-reported interest only; no price, contact or payment is collected.'}
 
@@ -335,7 +321,9 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
             outcome = 'invalid_input'
             raise HTTPException(422, str(exc))
         finally:
-            store.wave2_event(slug, identity, 'launch', outcome, 'rest', internal)
+            channel = ('rest_playground' if request.headers.get(
+                'x-404-client-surface', '').lower() == 'web-playground' else 'rest')
+            store.wave2_event(slug, identity, 'launch', outcome, channel, internal)
 
     @app.post('/v1/lab/{slug}')
     async def lab_call(slug: str, payload: dict[str, Any], request: Request):

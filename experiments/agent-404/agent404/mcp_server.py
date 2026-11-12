@@ -17,7 +17,7 @@ from .core import Limited, UpstreamFailed
 from .lab import LabInputError, run_lab
 from . import wave2
 
-mcp = MCPServer('AIBITIOUS 404 LAB - Ten Agent Experiments')
+mcp = MCPServer('AIBITIOUS 404 LAB - 32 Agent Experiments')
 rest = create_app()
 offline_readonly = ToolAnnotations(read_only_hint=True, destructive_hint=False,
                                    idempotent_hint=False, open_world_hint=False)
