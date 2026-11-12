@@ -1,8 +1,10 @@
-# AIBITIOUS 404 — agent-first missing-information experiment
+# AIBITIOUS 404 LAB — free 10-tool experiment
+
+Try the product at https://aibitious.com/404/ and its synthetic demos at https://aibitious.com/404/tools/. The LAB tools do not require cryptocurrency payments; this is separate from the experimental payment contracts elsewhere in the repository. Do not send real secrets or personal records.
 
 ## The 10-tool portfolio (2026-11)
 
-**Live since 10 Nov 2026:** ten tools are available at https://aibitious.com/404/tools/; public HTTPS/REST/MCP and v0.2.0 MCP Registry publishing were verified. Code stays in a draft PR; no paid use or independent adoption is claimed.
+**Live since 10 Nov 2026:** ten tools are available at https://aibitious.com/404/tools/; public HTTPS/REST/MCP and v0.2.0 MCP Registry publishing were verified. Original ten-tool release is merged. The limited free experiment has no demonstrated independent adoption or paid demand.
 
 The original CVE Verify is the baseline. Nine additional bounded and offline experiments share the public REST/MCP interface and each has separate telemetry:
 
