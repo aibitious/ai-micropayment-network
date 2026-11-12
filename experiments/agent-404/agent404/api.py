@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 from .core import Resolver, Store, Limited, UpstreamFailed
 from .lab import LabInputError, TOOLS, LIMITATIONS, describe_tools, run_lab
+from . import web_ui
 from . import wave2
 
 
@@ -59,7 +60,44 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 and request.headers.get('x-forwarded-prefix') == '/404'
                 and not request.scope.get('path', '').startswith('/mcp')):
             request.scope['root_path'] = '/404'
-        return await call_next(request)
+        # Measure discovery separately from calls; never mistake these for people.
+        path = request.scope.get('path', '')
+        response = await call_next(request)
+        path = path.rstrip('/') or '/'
+        route_map = {
+            '/': 'landing', '/tools': 'tools_directory',
+            '/docs': 'docs', '/openapi.json': 'openapi',
+            '/v1/catalog': 'catalog', '/v1/lab/catalog': 'lab_catalog',
+            '/llms.txt': 'llms', '/robots.txt': 'robots',
+            '/sitemap.xml': 'sitemap', '/.well-known/agent.json': 'agent_metadata',
+            '/health': 'health_probe', '/wave2': 'wave2_directory',
+            '/v1/wave2/catalog': 'wave2_catalog',
+        }
+        route = route_map.get(path)
+        if path.startswith('/tools/') and request.method in ('GET', 'HEAD'):
+            route = 'tool_detail'
+        if path == '/mcp' or path.startswith('/mcp/'):
+            route = 'mcp_http'  # HTTP requests, NOT individual agents or MCP sessions
+        if route and request.method in ('GET', 'HEAD', 'POST'):
+            ua = request.headers.get('user-agent', '').lower()
+            segment = ('declared_automated' if any(word in ua for word in (
+                'bot', 'crawler', 'spider', 'curl/', 'wget/', 'python-requests',
+                'httpx/', 'headlesschrome', 'go-http-client', 'uptime'))
+                       else 'unclassified')
+            hints = {'landing', 'directory', 'docs', 'github', 'mcp',
+                     'experiment', 'social', 'demo', 'partner'}
+            hint = request.query_params.get('src', '').lower()
+            campaign = hint if hint in hints else 'unattributed'
+            internal = bool(admin) and secrets.compare_digest(
+                request.headers.get('x-404-internal-test', ''), admin)
+            try:
+                store.discovery_event(route, request.method, client_identity(request),
+                                      segment, campaign, response.status_code, internal)
+            except Exception:
+                # Telemetry failures must not break user traffic. No sensitive input logged.
+                import logging
+                logging.getLogger(__name__).warning('404 discovery telemetry unavailable')
+        return response
 
     trusted_proxies = {v.strip() for v in os.environ.get('TRUSTED_PROXY_IPS', '').split(',') if v.strip()}
 
@@ -82,32 +120,11 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def landing():
-        return '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>AIBITIOUS 404 — verify public facts</title>
-        <style>body{background:#0d1420;color:#e4ecf4;font:17px system-ui;max-width:800px;margin:10vh auto;padding:2rem}h1{font-size:3rem}a{color:#91c6ff}code,pre{background:#1b2836;padding:1rem;display:block;overflow:auto;border-radius:8px}p{line-height:1.6}</style>
-        <h1>404 LAB — Ten experiments for AI agents</h1><p>Free machine-readable tools for data quality, security signals, API preflight and official CVE evidence. No promises of guaranteed compliance or autonomous discovery.</p>
-        <pre>POST v1/resolve\n{"identifier":"CVE-2024-3094"}</pre>
-        <p><a href="docs">OpenAPI docs</a> · <a href="tools/">10 tools</a> · <a href="wave2/">New prototypes</a> · <a href="v1/catalog">Agent catalog</a> · <a href="health">Health</a></p>
-        <p>Free experimental access. No payments enabled. Do not submit secrets or personal information.</p></html>'''
+        return web_ui.landing()
 
     @app.get('/tools/', response_class=HTMLResponse, include_in_schema=False)
     async def tools_directory():
-        links = ''.join(
-            f'<li><a href="{slug}">{title}</a> — {desc}</li>'
-            for slug, (title, desc) in TOOLS.items()
-        )
-        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                '<title>AIBITIOUS 404 LAB: 10 free agent tools</title>'
-                '<style>body{max-width:800px;margin:5vh auto;padding:1em;font:17px system-ui;line-height:1.7}</style>'
-                '<h1>Ten experiments. One shared scoreboard.</h1>'
-                '<p>CVE Verify is already running at <a href="../docs">/v1/resolve</a>. '
-                'The other nine experiments run offline and are free.</p><ol>' + links + '</ol>'
-                '<p><a href="../v1/lab/catalog">Machine-readable catalog</a> · '
-                '<a href="../docs">OpenAPI documentation</a> · '
-                '<a href="../">AIBITIOUS 404</a></p>'
-                '<p>Experimental checks are not compliance, legal or tax certification. '
-                'Do not submit sensitive or private real-world data.</p></html>')
+        return web_ui.directory()
 
     @app.get('/tools/{slug}', response_class=HTMLResponse, include_in_schema=False)
     async def tool_page(slug: str, request: Request):
@@ -116,21 +133,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         identity = client_identity(request)
         internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
         store.lab_event(slug, identity, 'page', 'view', 0, internal)
-        title, desc = TOOLS[slug]
-        from html import escape
-        title = escape(title)
-        desc = escape(desc)
-        return ('<!doctype html><html lang="en"><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                f'<title>{title} — AIBITIOUS 404 LAB</title>'
-                '<style>body{max-width:800px;margin:5vh auto;padding:1em;font:17px system-ui;line-height:1.7}</style>'
-                f'<h1>{title}</h1><p>{desc}</p>'
-                f'<p><strong>REST:</strong> POST https://aibitious.com/404/v1/lab/{slug}</p>'
-                '<p><strong>MCP:</strong> https://aibitious.com/404/mcp/ (find matching tool name in tools/list)</p>'
-                f'<p>Free experimental use. {escape(LIMITATIONS[slug])}</p>'
-                '<p><a href="../v1/lab/catalog">Input specifications</a> · '
-                '<a href="../docs">API schema</a> · <a href="./">All tools</a></p>'
-                '<p>Process only synthetic or non-sensitive data. No payments accepted.</p></html>')
+        return web_ui.tool_detail(slug)
 
     @app.get('/wave2/', response_class=HTMLResponse, include_in_schema=False)
     async def wave2_directory(request: Request):
@@ -337,7 +340,10 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
             raise HTTPException(422, str(exc))
         finally:
             ms = int((time.perf_counter()-start)*1000)
-            store.lab_event(slug, identity, 'rest', outcome, ms, internal)
+            # Browser demo is self-declared; it is REST but not an agent integration.
+            channel = ('rest_playground' if request.headers.get(
+                'x-404-client-surface', '').lower() == 'web-playground' else 'rest')
+            store.lab_event(slug, identity, channel, outcome, ms, internal)
 
     @app.get('/v1/lab/metrics', include_in_schema=False)
     async def lab_metrics(authorization: str = Header(default='')):
@@ -345,7 +351,9 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
             raise HTTPException(503, 'admin metrics not configured')
         if not secrets.compare_digest(authorization, 'Bearer '+admin):
             raise HTTPException(403, 'forbidden')
-        return store.lab_metrics()
+        report = store.lab_metrics()
+        report['discovery'] = store.discovery_metrics()
+        return report
 
     @app.get('/v1/results/{result_id}')
     async def result(result_id: str):
