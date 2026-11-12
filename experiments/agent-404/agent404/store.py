@@ -44,6 +44,19 @@ class Store:
                     latency_ms INTEGER NOT NULL DEFAULT 0
                 );
                 CREATE INDEX IF NOT EXISTS lab_events_tool_at ON lab_events(tool,at);
+                CREATE TABLE IF NOT EXISTS discovery_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    at INTEGER NOT NULL,
+                    route TEXT NOT NULL,
+                    method TEXT NOT NULL,
+                    identity TEXT NOT NULL,
+                    segment TEXT NOT NULL,
+                    campaign TEXT NOT NULL,
+                    status_code INTEGER NOT NULL,
+                    internal INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS discovery_events_at ON discovery_events(at);
+                CREATE INDEX IF NOT EXISTS discovery_events_route_at ON discovery_events(route,at);
             ''')
 
     @contextmanager
@@ -146,9 +159,49 @@ class Store:
                     'cve_baseline':dict(cve),
                     'note':'REST unique clients are HMAC network-ID estimates; MCP uses a shared anonymous bucket, so unique MCP agents are unknown. Crawlers are not automatically excluded. No raw payloads are retained.'}
 
+    def discovery_event(self, route: str, method: str, identity: str,
+                        segment: str, campaign: str, status_code: int,
+                        internal: bool = False):
+        """Metadata only: no raw IP, User-Agent, referrer, URL or payload."""
+        with self.connection() as db:
+            db.execute('''INSERT INTO discovery_events
+                       (at,route,method,identity,segment,campaign,status_code,internal)
+                       VALUES(?,?,?,?,?,?,?,?)''',
+                       (int(time.time()), route, method, identity, segment,
+                        campaign, int(status_code), int(internal)))
+
+    def discovery_metrics(self, since: int | None = None):
+        """Unclassified/declared automation: neither proves a real person."""
+        after = int(since if since is not None else time.time() - 30*86400)
+        with self.connection() as db:
+            rows = db.execute('''SELECT DATE(at,'unixepoch') AS day,route,method,
+                             segment,campaign,status_code,COUNT(*) AS requests,
+                             COUNT(DISTINCT identity) AS estimated_network_ids
+                             FROM discovery_events
+                             WHERE at>=? AND internal=0
+                             GROUP BY day,route,method,segment,campaign,status_code
+                             ORDER BY day,route,method''', (after,)).fetchall()
+            tests = db.execute('''SELECT COUNT(*) AS n FROM discovery_events
+                                  WHERE at>=? AND internal=1''',(after,)).fetchone()['n']
+            returning = db.execute('''SELECT COUNT(*) AS n FROM
+                (SELECT identity FROM discovery_events
+                 WHERE at>=? AND internal=0 AND segment='unclassified'
+                   AND route IN ('landing','tools_directory','tool_detail','docs')
+                   AND method='GET' AND status_code BETWEEN 200 AND 299
+                 GROUP BY identity
+                 HAVING COUNT(DISTINCT DATE(at,'unixepoch')) >= 2)''',
+                 (after,)).fetchone()['n']
+            return {'window_start_unix': after,
+                    'by_day_route': [dict(r) for r in rows],
+                    'internal_probes_excluded': tests,
+                    'estimated_returning_unclassified_network_ids': returning,
+                    'measurement_started_from_first_discovery_event': True,
+                    'interpretation': 'Network IDs are HMAC estimates; User-Agent self-declared automation is spoofable. Unclassified visits are NOT confirmed people or independent agents. MCP HTTP requests are NOT sessions or distinct agents. Campaign is a self-reported hint. Previous traffic before deployment is unknown.'}
+
     def prune(self):
         now = int(time.time())
         with self.connection() as db:
+            db.execute('DELETE FROM discovery_events WHERE at<?', (now-30*86400,))
             db.execute('DELETE FROM events WHERE at<?', (now-30*86400,))
             db.execute('DELETE FROM lab_events WHERE at<?', (now-30*86400,))
             db.execute('DELETE FROM results WHERE expires_at<?', (now-7*86400,))
