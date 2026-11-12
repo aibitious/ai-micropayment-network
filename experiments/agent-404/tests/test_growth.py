@@ -79,3 +79,12 @@ def test_playground_channel_does_not_impersonate_agent_rest(tmp_path, monkeypatc
             "Authorization": "Bearer read-only-test-admin"}).json()
         assert any(row["channel"] == "rest_playground" for row in result["tool_channels"])
         assert not any(row["channel"] == "rest" for row in result["tool_channels"])
+
+
+def test_head_probes_are_readable_but_unknown_tools_are_not(tmp_path):
+    app = create_app(db_path=str(tmp_path / 'head.sqlite3'), secret='secret')
+    with TestClient(app) as client:
+        for path in ('/', '/tools/', '/tools/json_guard', '/docs',
+                     '/llms.txt', '/sitemap.xml', '/v1/lab/catalog'):
+            assert client.head(path).status_code == 200
+        assert client.head('/tools/not_a_tool').status_code == 404
