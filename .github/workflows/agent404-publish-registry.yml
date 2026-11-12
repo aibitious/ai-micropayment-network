@@ -2,6 +2,7 @@ name: Publish AIBITIOUS 404 to MCP Registry
 on:
   push:
     branches:
+      - main
       - feature/agent404-experiment-20261109
     paths:
       - 'experiments/agent-404/server.json'
