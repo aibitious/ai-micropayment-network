@@ -118,6 +118,24 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                         addr = str(parsed)
         return engine.identity(addr)
 
+    # Some catalog crawlers use HEAD rather than GET to validate a public URL.
+    @app.head('/', include_in_schema=False)
+    @app.head('/tools/', include_in_schema=False)
+    @app.head('/docs', include_in_schema=False)
+    @app.head('/llms.txt', include_in_schema=False)
+    @app.head('/sitemap.xml', include_in_schema=False)
+    @app.head('/v1/catalog', include_in_schema=False)
+    @app.head('/v1/lab/catalog', include_in_schema=False)
+    @app.head('/health', include_in_schema=False)
+    async def public_head():
+        return Response(status_code=200)
+
+    @app.head('/tools/{slug}', include_in_schema=False)
+    async def public_tool_head(slug: str):
+        if slug not in TOOLS:
+            raise HTTPException(404, 'Unknown LAB tool')
+        return Response(status_code=200)
+
     @app.get('/', response_class=HTMLResponse, include_in_schema=False)
     async def landing():
         return web_ui.landing()
