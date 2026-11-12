@@ -4,6 +4,7 @@ from __future__ import annotations
 from html import escape
 import json
 from .lab import TOOLS, LIMITATIONS
+from . import wave2
 
 EXAMPLES = {
     "json_guard": {"document": {"id": 3}, "schema": {"type": "object", "required": ["id"], "properties": {"id": {"type": "integer"}}}},
@@ -129,3 +130,89 @@ form.addEventListener('submit', async (e) => {
     return _page(title + " — Free Live Demo | AIBITIOUS 404",
                  desc + " Try a synthetic example with REST or MCP. No account or payments required.",
                  "https://aibitious.com/404/tools/"+slug, body)
+
+
+def wave2_directory() -> str:
+    cards = ''.join(
+        '<article class="card"><h3><a href="/404/wave2/'+escape(slug)+'?src=directory">'+
+        escape(title)+'</a></h3><p>'+escape(desc)+'</p>'+
+        '<a href="/404/wave2/'+escape(slug)+'?src=directory">Try synthetic example</a></article>'
+        for slug, (title, desc) in wave2.TOOLS.items())
+    body = ('<span class="pill">Second cohort · 22 decision-support prototypes</span>'
+            '<h1>Simulate the decisions your agent makes before it acts.</h1>'
+            '<p class="lead">Offline, limited, deterministic checks for agent permissions, '
+            'budget envelopes, workflow recovery, source provenance and other pre-action decisions. '
+            'These are advisory simulations, not production enforcement.</p>'
+            '<section class="grid">'+cards+'</section>'
+            '<p class="notice">Only use synthetic or public data. No credential collection, '
+            'payments, live workflow execution or compliance certification.</p>'
+            '<p><a href="/404/tools/">Original 10 LAB tools</a> · '
+            '<a href="/404/v1/wave2/catalog">22-machine catalog with examples</a></p>')
+    return _page("22 Agent Decision Prototypes — AIBITIOUS 404 LAB",
+                 "Try 22 free offline AI-agent decision simulations with synthetic inputs. REST and MCP interfaces; no payments.",
+                 "https://aibitious.com/404/wave2/", body)
+
+
+def wave2_detail(slug: str) -> str:
+    title, description = wave2.TOOLS[slug]
+    sample = json.dumps(wave2.EXAMPLES[slug], indent=2, ensure_ascii=False)
+    body = (
+        '<span class="pill">Second-wave prototype · free</span>'
+        '<h1>'+escape(title)+'</h1><p class="lead">'+escape(description)+'</p>'
+        '<p class="notice">'+escape(wave2.LIMITATIONS[slug])+
+        ' Try only synthetic or non-sensitive data; this check never executes actions.</p>'
+        '<h2>Try the synthetic example</h2>'
+        '<form id="wave2-demo" data-slug="'+escape(slug, quote=True)+'">'
+        '<label for="payload">Request JSON</label>'
+        '<textarea id="payload" maxlength="20000" spellcheck="false">'+escape(sample)+'</textarea>'
+        '<div class="actions"><button type="submit">Run simulation</button></div></form>'
+        '<h2>Result</h2><pre id="output" aria-live="polite">Run the example to view findings.</pre>'
+        '<h2>Connect your agent</h2><pre>POST https://aibitious.com/404/v1/wave2/'+escape(slug)+'</pre>'
+        '<p><a href="/404/v1/wave2/catalog">Machine-readable examples</a> · '
+        '<a href="/404/mcp/">MCP endpoint</a></p>'
+        '<h2>Would you be interested in a more advanced version?</h2>'
+        '<p class="muted">Optional anonymous research signal. Not a purchase or payment commitment.</p>'
+        '<div class="actions"><button type="button" class="secondary" data-signal="pricing">See future pricing</button>'
+        '<button type="button" class="secondary" data-signal="pilot">Consider a future pilot</button></div>'
+        '<p id="signal-result" role="status" aria-live="polite"></p>'
+        '<p><a href="/404/wave2/">Explore all 22 prototypes</a> · '
+        '<a href="/404/tools/">Original ten LAB tools</a></p>'
+    )
+    body += """<script>
+const form = document.getElementById('wave2-demo');
+const slug = form.dataset.slug;
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const output = document.getElementById('output');
+  output.textContent = 'Running...';
+  try {
+    const response = await fetch('/404/v1/wave2/' + encodeURIComponent(slug), {
+      method:'POST', headers:{'Content-Type':'application/json',
+                             'X-404-Client-Surface':'web-playground'},
+      body: document.getElementById('payload').value
+    });
+    let text = await response.text();
+    try { text = JSON.stringify(JSON.parse(text), null, 2); } catch { text = text.slice(0,3000); }
+    output.textContent = (response.ok ? '' : 'HTTP ' + response.status + '\\n') + text;
+  } catch {
+    output.textContent = 'Network error. Check availability and retry.';
+  }
+});
+document.querySelectorAll('[data-signal]').forEach(button =>
+  button.addEventListener('click', async () => {
+    const status = document.getElementById('signal-result');
+    try {
+      const response = await fetch('/404/v1/wave2/' + encodeURIComponent(slug) + '/interest', {
+        method:'POST', headers:{'Content-Type':'application/json',
+                               'X-404-Client-Surface':'web-playground'},
+        body:JSON.stringify({signal:button.dataset.signal})
+      });
+      status.textContent = response.ok ?
+        'Thank you. Anonymous research signal saved; no payment or contact recorded.' :
+        'Could not record the research signal.';
+    } catch { status.textContent = 'Network error. No signal recorded.'; }
+  }));
+</script>"""
+    return _page(title + " — Interactive Agent Prototype | AIBITIOUS 404",
+                 description + " Try a free synthetic demonstration; no paid service or verification implied.",
+                 "https://aibitious.com/404/wave2/" + slug, body)
