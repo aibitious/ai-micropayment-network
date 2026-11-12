@@ -60,6 +60,10 @@ def landing() -> str:
 <article class="card"><h3>Broken input?</h3><p>Spot missing JSON fields, inconsistent CSV rows and unexpected schema changes before an agent acts on them.</p><a href="/404/tools/json_guard?src=landing">Run JSON Guard</a></article>
 <article class="card"><h3>Uncertain API integration?</h3><p>Inspect supplied OpenAPI metadata and MCP registration documents without executing third-party code.</p><a href="/404/tools/openapi_preflight?src=landing">Check an API contract</a></article>
 <article class="card"><h3>Wrong calculated totals?</h3><p>Recalculate sample invoice line totals with decimal arithmetic; no claim of legal or tax certification.</p><a href="/404/tools/invoice_audit?src=landing">Try invoice arithmetic</a></article></section>
+<h2>22 more agent decision tools — second wave</h2>
+<p>Beyond the original ten validators, explore 22 free simulations for action approval, workflow recovery, evidence provenance, budgets, idempotency, release gates and reliability. They have their own test window and usage metrics.</p>
+<div class="actions"><a class="button" href="/404/wave2/?src=landing">Explore 22 new prototypes</a>
+<a class="button secondary" href="/404/v1/wave2/catalog?src=landing">Second-wave API catalog</a></div>
 <h2>Connect from your agent</h2>
 <p>Use <a href="/404/mcp/">MCP Streamable HTTP</a> or standard <a href="/404/openapi.json">OpenAPI</a>. Explore the <a href="/404/v1/lab/catalog">tool catalog</a> for exact input schemas.</p>
 <pre>https://aibitious.com/404/mcp/</pre>
@@ -80,7 +84,7 @@ def directory() -> str:
             '<h2>10. CVE Verify</h2><p>Retrieve public vulnerability records from NIST NVD. '
             'This is an older baseline, separate from the nine new offline validators. '
             '<a href="/404/docs">Open the CVE API reference</a>.</p>'
-            '<p class="notice">Tests are free, but not certifications or security audits. Only use synthetic or public data.</p>')
+            '<p><a class="button" href="/404/wave2/?src=directory">Also explore 22 decision-support prototypes</a></p><p class="notice">Tests are free, but not certifications or security audits. Only use synthetic or public data.</p>')
     return _page("10 Free AI Agent Tools — AIBITIOUS 404 LAB",
                  "Try JSON validation, CSV quality, invoice math, schema diff and API/MCP contract checks without signing up.",
                  "https://aibitious.com/404/tools/", body)
