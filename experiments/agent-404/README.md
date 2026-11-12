@@ -1,8 +1,15 @@
-# AIBITIOUS 404 — agent-first missing-information experiment
+# AIBITIOUS 404 LAB — free, bounded tools for agents and developers
+
+
+**Try the public product:** [AIBITIOUS 404](https://aibitious.com/404/) · [Hands-on synthetic demos](https://aibitious.com/404/tools/) · [REST schema](https://aibitious.com/404/openapi.json) · [MCP endpoint](https://aibitious.com/404/mcp/).
+
+**What this is not:** the experimental tools are separate from the repository's historic micropayment/smart-contract concept. Agent404 requires no wallet, settlement, login or payment. It does not certify legal/tax/security correctness. Please do not send actual secrets or private records.
+
+See [Acquisition and measurement protocol](docs/GROWTH_MEASUREMENT.md) for the differences between a registry listing, a bot, an HTTP visit, an API call and a repeated integration.
 
 ## The 10-tool portfolio (2026-11)
 
-**Live since 10 Nov 2026:** ten tools are available at https://aibitious.com/404/tools/; public HTTPS/REST/MCP and v0.2.0 MCP Registry publishing were verified. Code stays in a draft PR; no paid use or independent adoption is claimed.
+**Live since 10 Nov 2026:** ten tools are available at https://aibitious.com/404/tools/; public HTTPS/REST/MCP and v0.2.0 MCP Registry publishing were verified. The ten-tool foundation was merged as PR #1. Independent adoption and paid demand remain unproven.
 
 The original CVE Verify is the baseline. Nine additional bounded and offline experiments share the public REST/MCP interface and each has separate telemetry:
 
