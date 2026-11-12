@@ -85,7 +85,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 'httpx/', 'headlesschrome', 'go-http-client', 'uptime'))
                        else 'unclassified')
             hints = {'landing', 'directory', 'docs', 'github', 'mcp',
-                     'experiment', 'social', 'demo', 'partner'}
+                     'experiment', 'social', 'demo', 'site'}
             hint = request.query_params.get('src', '').lower()
             campaign = hint if hint in hints else 'unattributed'
             internal = bool(admin) and secrets.compare_digest(
