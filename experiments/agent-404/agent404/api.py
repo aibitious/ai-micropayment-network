@@ -195,6 +195,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                 "- Tools: https://aibitious.com/404/tools/ and machine-readable https://aibitious.com/404/v1/lab/catalog\n"
                 "- Wave two: https://aibitious.com/404/wave2/ and machine-readable https://aibitious.com/404/v1/wave2/catalog\n"
                 "- Full 32-page sitemap: https://aibitious.com/404/sitemap.xml\n"
+                "- Business prototypes: https://aibitious.com/404/v1/business/catalog (company metadata and candidate project sources; not verified purchase data).\n"
                 "- Limits: 20 KB per validator payload; all nine validators use in-memory input only.\n"
                 "- No real secrets, personal records, financial documents or production data should be submitted.\n")
 
@@ -234,6 +235,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
             'description': '32 free agent tools: CVE evidence, nine offline validators, and 22 offline decision prototypes',
             'openapi': '/openapi.json', 'resolve': '/v1/resolve', 'report_gap': '/v1/gaps',
             'lab_catalog': '/v1/lab/catalog', 'lab_tools': describe_tools(),
+            'business_catalog': '/v1/business/catalog', 'business_tools': 2,
             'wave2_catalog': '/v1/wave2/catalog', 'wave2_prototypes': len(wave2.TOOLS),
             'limitations': ['Only CVE lookup fetches official NVD data', 'offline tools do not certify security, tax compliance or source correctness', 'no payment support'],
             'price': {'amount': 0, 'currency': 'USD', 'note': 'free experiment'},
@@ -378,6 +380,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
     async def payments():
         return {'enabled': False, 'protocol': 'x402', 'reason': 'testnet integration not yet verified; never accept funds in MVP'}
 
+    from . import business
+    business.attach(app, engine, store, client_identity)
     return app
 
 
