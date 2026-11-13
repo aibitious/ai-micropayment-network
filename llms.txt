@@ -1,3 +1,15 @@
+# AIBITIOUS 404 LAB — 32 free tools (separate experiment)
+
+The public LAB has 10 original checks and 22 offline agent-decision prototypes. It needs no account, wallet or payment. Use synthetic or public inputs only.
+
+- Human catalog: https://aibitious.com/404/ (10 original: /404/tools/; 22 second wave: /404/wave2/)
+- All 32 individual pages: https://aibitious.com/404/sitemap.xml
+- REST/OpenAPI: https://aibitious.com/404/openapi.json
+- MCP Streamable HTTP: https://aibitious.com/404/mcp/
+- Official MCP Registry name: io.github.aibitious/agent404
+
+The historic micropayment concept below is separate from the free LAB. Its claims are not a description of LAB billing or functionality.
+
 # AiMPN v2.0 — AI Micropayment Network (Zero-Gas M2M on Base Mainnet)
 
 > AiMPN v2.0 is an open-source decentralized infrastructure on Base Mainnet (L2) enabling autonomous AI agents, LangChain tools, and HuggingFace models to execute Machine-to-Machine (M2M) micropayments with 100% sponsored zero gas fees via ERC-4337 Account Abstraction.

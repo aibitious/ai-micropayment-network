@@ -25,6 +25,8 @@ This is an experiment, not a claim that MCP Registry registration produces custo
 
 - `landing / tools_directory / docs / tool_detail`: HTTP requests; may include known crawlers, own probes and browser sessions. Not unique human visitors.
 - `mcp_http`: transport HTTP requests only. Not independent agents, not protocol initialization or tool calls.
+- `wave2_directory / wave2_catalog`: one HTTP request per visit or catalog fetch. Before the directory-count fix, each request also produced 22 per-tool wave-two discovery events; those historical events must be divided by the fanout or read from `discovery_events`, never reported as 22 visits.
+- `wave2_detail`: one HTTP request to an individual second-wave page. The matching per-tool detail event records exposure, not a launch.
 - `lab_events channel=page`: per-tool page views.
 - `lab_events channel=rest_playground`: client-declared web demo calls; HTTP REST requests, **not** external agent integrations.
 - `lab_events channel=rest`: REST calls without the playground marker, still could be tests or scripts.
@@ -37,7 +39,7 @@ This is an experiment, not a claim that MCP Registry registration produces custo
 
 ## Daily report
 
-Use the protected `GET /v1/lab/metrics` or direct read-only `Store.lab_metrics()` and `Store.discovery_metrics()`. Never expose bearer credentials, hashes, user-submitted data, raw IP addresses or log bodies. Present missing measurements as **brak danych** rather than zero. Keep CVE baseline separate: compare the portfolio only from 2026-11-10 UTC onward. Show tool outcomes, REST vs MCP vs demo, crawler declarations, source hints, estimated returning network IDs, latency, incidents, upstream rate limits and cost indicators. Confirm zero billing rather than assuming zero infrastructure costs.
+Use the protected `GET /v1/lab/metrics`, `GET /v1/wave2/metrics`, or direct read-only Store methods. Never expose bearer credentials, hashes, user-submitted data, raw IP addresses or log bodies. Present missing measurements as **brak danych** rather than zero. Keep the original ten and second-wave 22 separate, then rank all 32 by completed non-internal tool executions. Compare the original cohort only from 2026-11-10 UTC and wave two from 2026-11-12 UTC. Show REST vs MCP vs demo, crawler declarations, source hints, estimated returning network IDs, latency, incidents, upstream rate limits and cost indicators. Confirm zero billing rather than assuming zero infrastructure costs.
 
 Before deploying this instrumentation, historical discovery traffic was not measured. A new discovery table does not retrospectively recover it. For 30-day analysis, clearly annotate deployment date and avoid using pre-instrumentation zeros as evidence.
 
