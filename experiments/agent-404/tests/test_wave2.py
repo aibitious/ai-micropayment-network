@@ -27,7 +27,8 @@ def test_mcp_exposes_all_distinct_tools_with_examples():
     from agent404.mcp_server import mcp
     listed = mcp._tool_manager.list_tools()
     names = [tool.name for tool in listed]
-    assert len(names) == len(set(names)) == 33
+    assert len(names) == len(set(names)) == 35
+    assert {"company_card", "project_signals"} <= set(names)
     for slug in wave2.wave2_more.TOOLS:
         tool = next(item for item in listed if item.name == slug)
         assert 'Supply payload like' in tool.description

@@ -53,6 +53,7 @@ def _page(title: str, description: str, canonical: str, body: str) -> str:
 
 def landing() -> str:
     body = """<span class="pill">Public experiment · 32 free tools</span>
+<p><a href="/404/business/">New: CompanyCard &amp; ProjectSignals — public-source prototypes</a></p>
 <h1>Catch data and integration errors before they reach production.</h1>
 <p class="lead">Small, deterministic checks for developers and AI agents. Inspect JSON, CSV, invoices, API contracts, MCP metadata and schema drift. Use REST or a public Streamable HTTP MCP server.</p>
 <div class="actions"><a class="button" href="/404/tools/?src=landing">Try a working demo</a>

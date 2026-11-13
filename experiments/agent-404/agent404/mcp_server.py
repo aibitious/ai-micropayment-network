@@ -198,6 +198,39 @@ for _slug in wave2.wave2_more.TOOLS:
     _register_wave2_payload_tool(_slug)
 
 
+async def _business_call(slug: str, domain: str) -> dict:
+    from .business import execute
+    engine = rest.state.resolver
+    identity = engine.identity('mcp-public')
+    outcome = 'error'
+    try:
+        engine.gate('business-global', 'business')
+        engine.gate(identity, 'business-client')
+        result = await execute(slug, domain)
+        outcome = result['status']
+        return result
+    except Limited:
+        outcome = 'rate_limited'
+        return {'status': 'rate_limited'}
+    except LabInputError as exc:
+        outcome = 'invalid_or_unavailable_source'
+        return {'status': outcome, 'message': str(exc)}
+    finally:
+        rest.state.store.event(identity, 'business:' + slug, outcome)
+
+
+@mcp.tool()
+async def company_card(domain: str) -> dict:
+    """Read own-site company JSON-LD and description, with field provenance and explicit unknowns. Public HTTPS domain only. Not registry verification."""
+    return await _business_call('company_card', domain)
+
+
+@mcp.tool()
+async def project_signals(domain: str) -> dict:
+    """Discover up to three linked case-study candidates on a supplier website. Does NOT verify customer identity, project dates, purchases or current buying intent. Prototype."""
+    return await _business_call('project_signals', domain)
+
+
 # One server-wide MCP quota rather than trusting an easily spoofed claim of client identity.
 allowed = [s.strip() for s in os.getenv('MCP_ALLOWED_HOSTS', 'localhost:*,127.0.0.1:*').split(',') if s.strip()]
 security = TransportSecuritySettings(allowed_hosts=allowed, allowed_origins=[])
