@@ -44,8 +44,8 @@ Goal: test whether independently operated AI agents discover and reuse a small, 
 - `GET /v1/results/{id}` — retrieve previously resolved public result by UUID.
 - `GET /v1/catalog`, `/health`, `/openapi.json`, `/docs`, `/llms.txt`, `/robots.txt`, `/sitemap.xml`, `/.well-known/agent.json` — agent/web discovery, operational health and API schema. The `agent.json` is only descriptive metadata, not a claim of official registry support.
 - `GET /v1/metrics` — protected by bearer admin token; returns 30-day event totals and frequent public gaps. User/client counts are **estimates** based on HMAC-hashed network addresses, not verified humans or agents.
-- SQLite cache, retention pruning, API quotas, 80/day default global upstream ceiling plus one uncached NVD fetch per ten seconds (to protect the NVD no-key rate allowance), short HTTP timeouts and a fixed upstream hostname (no arbitrary URL fetching).
-- Official MCP SDK v2 adapter (`/mcp/`) with two tools. SDK dependency is required. Remote HTTPS MCP initialization and a real SDK `tools/list` and `tools/call` were successfully validated. All MCP clients share a conservative quota.
+- SQLite cache, retention pruning, API quotas and one uncached NVD fetch per ten seconds (to protect the NVD no-key rate allowance), short HTTP timeouts and a fixed upstream hostname (no arbitrary URL fetching). The 12 Nov production release used 60/day and 4/min per client plus 80/day globally for NVD; read the current deployment configuration before claiming those values remain active.
+- Official MCP SDK v2 adapter (`/mcp/`) with 33 functions in the 12 Nov release: 32 experiments and one missing-information reporter. SDK dependency is required. Remote HTTPS MCP initialization and a real SDK `tools/list` and `tools/call` were validated at release. Anonymous MCP clients cannot be counted as independent agents.
 - Payments are explicitly **disabled**. `GET /v1/payments` states this; no wallet, facilitator or paid mainnet route is configured.
 
 ## Start locally

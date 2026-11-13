@@ -1,4 +1,16 @@
-# AIBITIOUS 404 LAB — public deployment (10 November 2026)
+# AIBITIOUS 404 LAB — deployment history and current release boundary
+
+## 13 November 2026 verification
+
+- Public `GET /404/health` returned HTTP 200, version 0.3.0, `experiments: 10` and `wave2_prototypes: 22`.
+- The public `/404/sitemap.xml` returned HTTP 200 with nine original tool pages and 22 second-wave pages; the CVE Verify page and `/robots.txt` and `/sitemap.xml` at the root domain returned 404.
+- Product PR [#9](https://github.com/aibitious/ai-micropayment-network/pull/9) merged at `b7c8826de005fcc855a06b5b8018b054f4b407d9` after 83 local tests and successful GitHub `test`, `analyze` and `Slither` checks. Its 32-page sitemap, CVE page, corrected copy and directory-count fix are **not yet verified on production**.
+- Parent-site PR [#3030](https://github.com/Aibitious-Labs/aibitious/pull/3030) remains draft; required `ci-gate` failed. Its updated homepage and root sitemap are **not live**. The existing static-site bridge manifest accepts only `index.html` and `aibitious.png`; robots/sitemap deployment requires a reviewed typed operation, green CI and exact-SHA receipt.
+- Production SentinelX host was connected, but a normal `docker inspect agent404_experiment` returned Docker socket permission denied. Do not infer container resource state from that failed read. Host load was 9.49 (one-minute), memory available 11,707 MiB and swap 4,094/4,095 MiB used at inspection. Confirm capacity and quotas through the reviewed route before broad distribution.
+
+The section below is the original 10 November release record, retained for chronology. Its version and tool counts are not current-status claims.
+
+## Original release record — 10 November 2026
 
 ## Canonical service
 - Site: https://aibitious.com/404/
