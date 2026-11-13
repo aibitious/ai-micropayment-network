@@ -1,7 +1,7 @@
 # AIBITIOUS 404 LAB — free, bounded tools for agents and developers
 
 
-**Try the public product:** [AIBITIOUS 404](https://aibitious.com/404/) · [Hands-on synthetic demos](https://aibitious.com/404/tools/) · [REST schema](https://aibitious.com/404/openapi.json) · [MCP endpoint](https://aibitious.com/404/mcp/).
+**Try the public product:** [AIBITIOUS 404](https://aibitious.com/404/) · [10 original tools](https://aibitious.com/404/tools/) · [22 decision prototypes](https://aibitious.com/404/wave2/) · [REST schema](https://aibitious.com/404/openapi.json) · [MCP endpoint](https://aibitious.com/404/mcp/).
 
 **What this is not:** the experimental tools are separate from the repository's historic micropayment/smart-contract concept. Agent404 requires no wallet, settlement, login or payment. It does not certify legal/tax/security correctness. Please do not send actual secrets or private records.
 
@@ -9,7 +9,7 @@ See [Acquisition and measurement protocol](docs/GROWTH_MEASUREMENT.md) for the d
 
 ## The 10-tool portfolio (2026-11)
 
-**Live since 10 Nov 2026:** ten tools are available at https://aibitious.com/404/tools/; public HTTPS/REST/MCP and v0.2.0 MCP Registry publishing were verified. The ten-tool foundation was merged as PR #1. Independent adoption and paid demand remain unproven.
+**Live since 10 Nov 2026:** the original ten tools are available at https://aibitious.com/404/tools/. The 22 second-wave prototypes launched on 12 Nov 2026 at https://aibitious.com/404/wave2/. Public HTTPS/REST/MCP and MCP Registry v0.3.0 were verified at release. Current production state must be checked separately. Independent adoption and paid demand remain unproven.
 
 The original CVE Verify is the baseline. Nine additional bounded and offline experiments share the public REST/MCP interface and each has separate telemetry:
 
@@ -33,7 +33,7 @@ Private analytics: \`GET /v1/lab/metrics\` requires the existing admin bearer to
 Experiment protocol and selection rules: [10-tool portfolio](docs/PORTFOLIO_10_EXPERIMENT.md).
 
 
-**Status: LIVE ten-tool free experiment at https://aibitious.com/404/; no payments enabled. Official MCP Registry version 0.2.0 was confirmed in the public registry.**
+**Release record:** 32 free tools (10 + 22) at https://aibitious.com/404/; no payments enabled. Official MCP Registry v0.3.0 was confirmed on 12 Nov 2026. See [deployment history](docs/DEPLOYMENT_STATUS.md); verify live state before any current-status claim.
 
 Goal: test whether independently operated AI agents discover and reuse a small, evidence-backed information API. The *first vertical* is deliberately narrow: resolving exact CVE IDs against the official NIST National Vulnerability Database (NVD). The project's long-term idea is to detect recurring missing-information needs, but this repository does **not** claim to verify arbitrary facts.
 

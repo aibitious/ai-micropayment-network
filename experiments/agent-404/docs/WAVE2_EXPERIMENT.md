@@ -87,8 +87,11 @@ keeps `experiments: 10` and separately reports `wave2_prototypes: 22`.
 
 ## Measurement and decision rule
 
-The isolated `wave2_events` table records discovery (directory, detail,
-catalog), launch (REST/MCP and outcome), return (estimated REST network IDs
+The isolated `wave2_events` table records per-tool detail exposure and launches
+(REST/MCP and outcome). `discovery_events` records directory and catalog requests
+once per HTTP request. Older releases wrote 22 per-tool wave-two events for each
+directory or catalog request; historical reports must account for this fanout.
+The funnel includes return (estimated REST network IDs
 launching on two distinct UTC days), and voluntary `pricing` or `pilot`
 signals. Admin-only `/v1/wave2/metrics` separates marked internal tests.
 The return estimate requires successful REST launches on two UTC days;

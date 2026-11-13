@@ -193,7 +193,7 @@ class Store:
             returning = db.execute('''SELECT COUNT(*) AS n FROM
                 (SELECT identity FROM discovery_events
                  WHERE at>=? AND internal=0 AND segment='unclassified'
-                   AND route IN ('landing','tools_directory','tool_detail','docs')
+                   AND route IN ('landing','tools_directory','tool_detail','wave2_directory','wave2_detail','docs')
                    AND method='GET' AND status_code BETWEEN 200 AND 299
                  GROUP BY identity
                  HAVING COUNT(DISTINCT DATE(at,'unixepoch')) >= 2)''',

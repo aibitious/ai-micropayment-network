@@ -52,7 +52,7 @@ def _page(title: str, description: str, canonical: str, body: str) -> str:
     return doc
 
 def landing() -> str:
-    body = """<span class="pill">Public 30-day experiment · 10 free tools</span>
+    body = """<span class="pill">Public experiment · 32 free tools</span>
 <h1>Catch data and integration errors before they reach production.</h1>
 <p class="lead">Small, deterministic checks for developers and AI agents. Inspect JSON, CSV, invoices, API contracts, MCP metadata and schema drift. Use REST or a public Streamable HTTP MCP server.</p>
 <div class="actions"><a class="button" href="/404/tools/?src=landing">Try a working demo</a>
@@ -72,8 +72,8 @@ def landing() -> str:
 <p>All nine validators work on supplied data in memory. Only CVE Verify queries the official NIST NVD database. The public experiment has usage limits and no billing. The tools are advisory and cannot certify security, regulatory compliance or factual truth.</p>
 <p class="notice">Use synthetic or public examples. Never submit credentials, personal information, private invoices or production records. The demo does not need registration.</p>
 <p><a href="/404/tools/">See all ten experiments</a> · <a href="/404/health">Service status</a> · <a href="/404/llms.txt">Agent discovery reference</a></p>"""
-    return _page("AIBITIOUS 404 LAB — Free REST and MCP validation tools",
-                 "Try ten free data-quality and API-preflight tools with REST and MCP. Runnable synthetic demos, no account or payments.",
+    return _page("AIBITIOUS 404 LAB — 32 Free REST and MCP Tools",
+                 "Try 32 free tools: 10 data and API checks plus 22 agent decision simulations. REST and MCP, synthetic demos, no account or payments.",
                  "https://aibitious.com/404/", body)
 
 def directory() -> str:
@@ -84,7 +84,7 @@ def directory() -> str:
             '<section class="grid">'+cards+'</section>'
             '<h2>10. CVE Verify</h2><p>Retrieve public vulnerability records from NIST NVD. '
             'This is an older baseline, separate from the nine new offline validators. '
-            '<a href="/404/docs">Open the CVE API reference</a>.</p>'
+            '<a href="/404/tools/cve_verify?src=directory">Explore CVE Verify</a>.</p>'
             '<p><a class="button" href="/404/wave2/?src=directory">Also explore 22 decision-support prototypes</a></p><p class="notice">Tests are free, but not certifications or security audits. Only use synthetic or public data.</p>')
     return _page("10 Free AI Agent Tools — AIBITIOUS 404 LAB",
                  "Try JSON validation, CSV quality, invoice math, schema diff and API/MCP contract checks without signing up.",
@@ -130,6 +130,24 @@ form.addEventListener('submit', async (e) => {
     return _page(title + " — Free Live Demo | AIBITIOUS 404",
                  desc + " Try a synthetic example with REST or MCP. No account or payments required.",
                  "https://aibitious.com/404/tools/"+slug, body)
+
+
+def cve_detail() -> str:
+    body = ('<span class="pill">Original LAB tool · official source lookup</span>'
+            '<h1>CVE Verify</h1>'
+            '<p class="lead">Look up one public CVE identifier in the NIST National Vulnerability Database. '
+            'The response links to its source record and reports when that record was fetched.</p>'
+            '<p class="notice">This is a record lookup, not a vulnerability scan or proof of exploitation. '
+            'It contacts NVD, so a daily upstream quota and cache apply. Submit only public CVE IDs.</p>'
+            '<h2>Use REST</h2><pre>POST https://aibitious.com/404/v1/resolve\n'
+            'Content-Type: application/json\n\n{"identifier":"CVE-2024-3094"}</pre>'
+            '<p><a href="/404/docs">OpenAPI reference</a> · '
+            '<a href="/404/mcp/">MCP endpoint</a> · '
+            '<a href="/404/tools/">Original tools</a> · '
+            '<a href="/404/wave2/">22 decision prototypes</a></p>')
+    return _page('CVE Verify — NVD Record Lookup | AIBITIOUS 404',
+                 'Look up one public CVE identifier against official NIST NVD records through REST or MCP. Free, rate limited, and advisory.',
+                 'https://aibitious.com/404/tools/cve_verify', body)
 
 
 def wave2_directory() -> str:

@@ -49,7 +49,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         yield
 
     app = FastAPI(title='AIBITIOUS 404', version='0.3.0', lifespan=lifespan,
-                  description='10 original LAB tools and an isolated second-wave prototype cohort. No payments.')
+                  description='32 free tools: 10 original LAB checks and 22 second-wave decision prototypes. No payments.')
     app.state.resolver = engine
     app.state.store = store
 
@@ -76,6 +76,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
         route = route_map.get(path)
         if path.startswith('/tools/') and request.method in ('GET', 'HEAD'):
             route = 'tool_detail'
+        if path.startswith('/wave2/') and request.method in ('GET', 'HEAD'):
+            route = 'wave2_detail'
         if path == '/mcp' or path.startswith('/mcp/'):
             route = 'mcp_http'  # HTTP requests, NOT individual agents or MCP sessions
         if route and request.method in ('GET', 'HEAD', 'POST'):
@@ -132,7 +134,7 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.head('/tools/{slug}', include_in_schema=False)
     async def public_tool_head(slug: str):
-        if slug not in TOOLS:
+        if slug not in TOOLS and slug != 'cve_verify':
             raise HTTPException(404, 'Unknown LAB tool')
         return Response(status_code=200)
 
@@ -146,12 +148,12 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.get('/tools/{slug}', response_class=HTMLResponse, include_in_schema=False)
     async def tool_page(slug: str, request: Request):
-        if slug not in TOOLS:
+        if slug not in TOOLS and slug != 'cve_verify':
             raise HTTPException(404, 'Unknown LAB tool')
         identity = client_identity(request)
         internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
         store.lab_event(slug, identity, 'page', 'view', 0, internal)
-        return web_ui.tool_detail(slug)
+        return web_ui.cve_detail() if slug == 'cve_verify' else web_ui.tool_detail(slug)
 
     @app.head('/wave2/', include_in_schema=False)
     async def wave2_directory_head():
@@ -165,10 +167,6 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.get('/wave2/', response_class=HTMLResponse, include_in_schema=False)
     async def wave2_directory(request: Request):
-        identity = client_identity(request)
-        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
-        for slug in wave2.TOOLS:
-            store.wave2_event(slug, identity, 'discovery', 'directory', 'page', internal)
         return web_ui.wave2_directory()
 
     @app.get('/wave2/{slug}', response_class=HTMLResponse, include_in_schema=False)
@@ -187,14 +185,16 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.get('/llms.txt', response_class=PlainTextResponse, include_in_schema=False)
     async def llms():
-        return ("# AIBITIOUS 404 – verifiable CVE records\n\n"
-                "Free public experiment: ten agent-facing experiments including official CVE lookup and nine offline validators. "
-                "Does not scan hosts, execute code, or accept payments.\n\n"
+        return ("# AIBITIOUS 404 LAB — 32 free agent tools\n\n"
+                "10 original checks (CVE lookup and nine offline validators) plus 22 offline decision prototypes. "
+                "No host scanning, supplied code execution, accounts or payments.\n\n"
                 "- REST docs: https://aibitious.com/404/docs\n"
                 "- OpenAPI: https://aibitious.com/404/openapi.json\n"
                 "- Agent catalog: https://aibitious.com/404/v1/catalog\n"
                 "- Streamable HTTP MCP: https://aibitious.com/404/mcp/\n"
                 "- Tools: https://aibitious.com/404/tools/ and machine-readable https://aibitious.com/404/v1/lab/catalog\n"
+                "- Wave two: https://aibitious.com/404/wave2/ and machine-readable https://aibitious.com/404/v1/wave2/catalog\n"
+                "- Full 32-page sitemap: https://aibitious.com/404/sitemap.xml\n"
                 "- Limits: 20 KB per validator payload; all nine validators use in-memory input only.\n"
                 "- No real secrets, personal records, financial documents or production data should be submitted.\n")
 
@@ -204,8 +204,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
                "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
                "<url><loc>https://aibitious.com/404/</loc></url>"
                "<url><loc>https://aibitious.com/404/docs</loc></url>"
-               "<url><loc>https://aibitious.com/404/v1/lab/catalog</loc></url>"
                "<url><loc>https://aibitious.com/404/tools/</loc></url>" +
+               "<url><loc>https://aibitious.com/404/tools/cve_verify</loc></url>" +
                ''.join(f"<url><loc>https://aibitious.com/404/tools/{slug}</loc></url>" for slug in TOOLS)
                + "<url><loc>https://aibitious.com/404/wave2/</loc></url>"
                + ''.join(f"<url><loc>https://aibitious.com/404/wave2/{slug}</loc></url>" for slug in wave2.TOOLS)
@@ -230,8 +230,8 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
     @app.get('/v1/catalog')
     async def catalog():
         return {
-            'name': 'AIBITIOUS 404 LAB', 'version': '0.2.0',
-            'description': '10 free agent-facing experiments; CVE verification plus nine bounded deterministic offline tools',
+            'name': 'AIBITIOUS 404 LAB', 'version': '0.3.0',
+            'description': '32 free agent tools: CVE evidence, nine offline validators, and 22 offline decision prototypes',
             'openapi': '/openapi.json', 'resolve': '/v1/resolve', 'report_gap': '/v1/gaps',
             'lab_catalog': '/v1/lab/catalog', 'lab_tools': describe_tools(),
             'wave2_catalog': '/v1/wave2/catalog', 'wave2_prototypes': len(wave2.TOOLS),
@@ -275,10 +275,6 @@ def create_app(*, db_path: str | None = None, secret: str | None = None,
 
     @app.get('/v1/wave2/catalog')
     async def wave2_catalog(request: Request):
-        identity = client_identity(request)
-        internal = bool(admin) and secrets.compare_digest(request.headers.get('x-404-internal-test', ''), admin)
-        for slug in wave2.TOOLS:
-            store.wave2_event(slug, identity, 'discovery', 'catalog', 'rest', internal)
         return {'name': 'AIBITIOUS 404 LAB wave two', 'version': '0.1.0',
                 'prototypes': wave2.describe_tools(), 'billing': 'disabled',
                 'privacy': 'No raw inputs are stored; use synthetic or public data only.'}

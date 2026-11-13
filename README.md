@@ -3,7 +3,7 @@
 > **Looking for the free AIBITIOUS 404 LAB MCP server?**  
 > [Launch the tool directory](https://aibitious.com/404/tools/) · [Try live synthetic demos](https://aibitious.com/404/) · [MCP endpoint](https://aibitious.com/404/mcp/) · [REST/OpenAPI](https://aibitious.com/404/docs) · [LAB source and safety notes](experiments/agent-404/README.md).
 >
-> **These are separate experiments in one repository.** AIBITIOUS 404 LAB is a public, free, rate-limited suite of ten verification/preflight tools. It requires **no wallet, cryptocurrency, account, or payment**, and is not backed by the payment smart contracts discussed below. Neither the LAB tools nor the contracts are independently certified. **Do not submit secrets or personal data to the public demo.** Registration in an MCP directory is not evidence of user adoption.
+> **These are separate experiments in one repository.** AIBITIOUS 404 LAB is a public, free, rate-limited suite of **32 tools**: 10 original verification/preflight checks and 22 offline agent-decision prototypes. It requires **no wallet, cryptocurrency, account, or payment**, and is not backed by the payment smart contracts discussed below. Neither the LAB tools nor the contracts are independently certified. **Do not submit secrets or personal data to the public demo.** Registration in an MCP directory is not evidence of user adoption.
 
 ---
 
